@@ -6,4 +6,4 @@ export const hash = async (plainText, rounds = 12, minor = "b") => {
   return hash;
 };
 
-export const compare = async (plainText, cipherText) => bcrypt.compare(plainText, cipherText);
+export const compare = async (plainText, cipherText) => bcrypt.compare(plainText, cipherText); 
