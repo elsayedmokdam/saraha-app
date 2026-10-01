@@ -16,8 +16,22 @@ export const signupSchema = (lang) => {
         DOB: z.coerce.date().optional(),
         image: z.string().optional(),
         imageCover: z.array(z.string()).optional(),
-        gender: z.enum(GenderEnum).optional(),
-        role: z.enum(RoleEnum).optional(),
+        gender: z
+          .enum(GenderEnum, {
+            message:
+              lang === LanguageEnum.AR
+                ? "خيار غير صالح: يجب أن يكون أحد الخيارات 0|1"
+                : "Invalid option: expected one of 0|1",
+          })
+          .optional(),
+        role: z
+          .enum(RoleEnum, {
+            message:
+              lang === LanguageEnum.AR
+                ? "خيار غير صالح: يجب أن يكون أحد الخيارات 0|1"
+                : "Invalid option: expected one of 0|1",
+          })
+          .optional(),
       })
       .superRefine((data, ctx) => {
         generalValidationFields.matchFields({

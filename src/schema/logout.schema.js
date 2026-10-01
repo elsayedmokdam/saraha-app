@@ -1,9 +1,20 @@
 import { z } from "zod";
 import { $ENUMS } from "../common/enum/index.js";
-const { LogoutEnum } = $ENUMS;
+import { headerSchema } from "./header.schema.js";
+const { LogoutEnum, LanguageEnum } = $ENUMS;
 
 export const logoutSchema = (lang) => {
-  return z.strictObject({
-    action: z.enum(LogoutEnum).default(LogoutEnum.ONE),
+  return z.object({
+    body: z.strictObject({
+      action: z
+        .enum(LogoutEnum, {
+          message:
+            lang === LanguageEnum.AR
+              ? "خيار غير صالح: يجب أن يكون أحد الخيارات 0|1"
+              : "Invalid option: expected one of 0|1",
+        })
+        .default(LogoutEnum.ONE),
+    }),
+    headers: headerSchema(),
   });
 };

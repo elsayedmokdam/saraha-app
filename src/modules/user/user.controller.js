@@ -3,10 +3,12 @@ import { allUsers, logout, profile, rotateToken } from "./user.service.js";
 import { $UTILS } from "../../common/utils/index.js";
 import { $MIDDLEWARES } from "../../middleware/index.js";
 import { $ENUMS } from "../../common/enum/index.js";
+import { $SCHEMAS } from "../../schema/index.js";
 const router = Router();
 const { successResponse } = $UTILS;
-const { authentication, authorization } = $MIDDLEWARES;
+const { authentication, authorization, validation } = $MIDDLEWARES;
 const { TokenTypeEnum, RoleEnum } = $ENUMS;
+const { logoutSchema } = $SCHEMAS;
 
 export default router;
 
@@ -42,7 +44,12 @@ router.post(
 );
 
 // Logout
-router.post("/logout", authentication(), async (req, res) => {
-  const { message } = await logout(req.payload, req.user, req.body);
-  return successResponse({ res, message });
-});
+router.post(
+  "/logout",
+  authentication(),
+  validation(logoutSchema),
+  async (req, res) => {
+    const { message } = await logout(req.payload, req.user, req.body);
+    return successResponse({ res, message });
+  },
+);
