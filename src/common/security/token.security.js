@@ -7,16 +7,26 @@ import {
   REFRESH_TOKEN_EXPIRES_IN,
   REFRESH_USER_TOKEN_SIGNATURE,
 } from "../../config.js";
+import { compare } from "./hash.security.js";
+import { randomUUID } from "node:crypto";
+// -----------    COMMONS    -----------
 import { $EXCEPTIONS } from "../exceptions/index.js";
 import { $REPOSITORIES } from "../repository/index.js";
 import { $MODELS } from "../../DB/models/index.js";
 import { $ENUMS } from "../enum/index.js";
-import { compare } from "./hash.security.js";
+import { $CACHE_SERVICES } from "../services/index.js";
+import { $UTILS } from "../utils/index.js";
+// -----------    COMMONS    -----------
+// ----------- DESTRUCTURING -----------
 const { BadRequestException, UnauthorizedException, NotFoundException } =
   $EXCEPTIONS;
 const { findById, findOne } = $REPOSITORIES;
 const { UserModel } = $MODELS;
 const { TokenTypeEnum, RoleEnum } = $ENUMS;
+const { userRevokeTokenKeyFormat } = $UTILS;
+const { exists, set } = $CACHE_SERVICES;
+
+// ----------- DESTRUCTURING -----------
 
 export const generateToken = async ({
   payload = {},
@@ -76,10 +86,33 @@ export const decodeToken = async ({
     throw BadRequestException({ message: "Missing Token Payload" });
   }
 
+  const revoked = await exists({
+    key: userRevokeTokenKeyFormat({
+      userId: payload.sub,
+      jti: payload.jti,
+    }),
+  });
+
+  if (revoked) {
+    throw UnauthorizedException({
+      message: "Session Expired, Please Login Again",
+    });
+  }
+
   const user = await findById({ model: UserModel, id: payload.sub });
   if (!user) {
-    throw UnauthorizedException({ message: "Invalid Token" });
+    throw UnauthorizedException({
+      message: "Session Expired, Please Login Again",
+    });
   }
+
+  // Logout from all devices, then the user.changeCredentialsTime will be updated to the current time, and the payload.iat will be less than the user.changeCredentialsTime, so the token will be invalid
+  if ((user.changeCredentialsTime?.getTime() ?? 0) > payload.iat * 1000) {
+    throw UnauthorizedException({
+      message: "Session Expired, Please Login Again",
+    });
+  }
+
   return { payload, user };
 };
 
@@ -87,11 +120,13 @@ export const createLoginCredentials = async ({
   payload = {},
   options = {},
 } = {}) => {
+  const jwtId = randomUUID();
   const [accessSignature, refreshSignature] = await Promise.all([
     getTokenSignatures({
       TokenType: TokenTypeEnum.ACCESS,
       role: payload.role,
     }),
+
     getTokenSignatures({
       TokenType: TokenTypeEnum.REFRESH,
       role: payload.role,
@@ -102,6 +137,7 @@ export const createLoginCredentials = async ({
       payload: {
         sub: payload.sub,
         role: payload.role,
+        jti: jwtId,
       },
       options: {
         ...options,
@@ -110,10 +146,12 @@ export const createLoginCredentials = async ({
       },
       secret: accessSignature,
     }),
+
     generateToken({
       payload: {
         sub: payload.sub,
         role: payload.role,
+        jti: jwtId,
       },
       options: {
         ...options,
@@ -123,11 +161,27 @@ export const createLoginCredentials = async ({
       secret: refreshSignature,
     }),
   ]);
-  // console.log({ access_token, refresh_token });
   return {
     access_token,
     refresh_token,
   };
+};
+
+export const createRevokeToken = async ({ payload }) => {
+  // payload.iat => iat of the access token, and it is equal to iat of the refresh token, because both tokens are generated at the same time
+  const consumedTime = Date.now() / 1000 - payload.iat;
+  const refreshExpiresIn = payload.iat + REFRESH_TOKEN_EXPIRES_IN;
+  const ttl = refreshExpiresIn - consumedTime;
+  // console.log("expiresIn", consumedTime + ttl);
+  await set({
+    key: userRevokeTokenKeyFormat({
+      userId: payload.sub,
+      jti: payload.jti,
+    }),
+    value: payload.jti,
+    options: { EX: ttl },
+  });
+  return;
 };
 
 export const basicAuth = async ({ email, password }) => {

@@ -69,6 +69,8 @@ const userSchema = new mongoose.Schema(
       enum: Object.values(ProviderEnum),
       default: ProviderEnum.SYSTEM,
     },
+
+    changeCredentialsTime: Date,
   },
   {
     timestamps: true,

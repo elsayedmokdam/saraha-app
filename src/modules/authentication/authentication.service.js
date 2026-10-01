@@ -1,16 +1,21 @@
 import { OAuth2Client } from "google-auth-library";
+import { WEB_CLIENT_IDs } from "../../config.js";
+// -----------    COMMONS    -----------
 import { $EXCEPTIONS } from "../../common/exceptions/index.js";
 import { $REPOSITORIES } from "../../common/repository/index.js";
 import { $MODELS } from "../../DB/models/index.js";
 import { $SECURITY } from "../../common/security/index.js";
-import { WEB_CLIENT_IDs } from "../../config.js";
 import { $ENUMS } from "../../common/enum/index.js";
+// -----------    COMMONS    -----------
+// ----------- DESTRUCTURING -----------
 const { UserModel } = $MODELS;
 const { create, findOne } = $REPOSITORIES;
 const { ConflictException, NotFoundException, BadRequestException } =
   $EXCEPTIONS;
-const { hash, compare, encryption, createLoginCredentials } = $SECURITY;
+const { hash, compare, encryption, createLoginCredentials, createRevokeToken } =
+  $SECURITY;
 const { ProviderEnum, RoleEnum } = $ENUMS;
+// ----------- DESTRUCTURING -----------
 
 const client = new OAuth2Client();
 async function verifyGoogleIDToken(idToken) {
@@ -128,23 +133,4 @@ export const login = async ({ email, password }, issuer) => {
   });
 };
 
-/*
-{
-  payload: {
-    iss: 'https://accounts.google.com',
-    azp: '117325117324-h8f6l719hffkuuaf3ark6175v29iejn5.apps.googleusercontent.com',
-    aud: '117325117324-h8f6l719hffkuuaf3ark6175v29iejn5.apps.googleusercontent.com',
-    sub: '115299189373794991135',
-    email: 'elsayedmokdam@gmail.com',
-    email_verified: true,
-    nonce: 'not_provided',
-    nbf: 1790111160,
-    name: 'elsayed mokdam',
-    picture: 'https://lh3.googleusercontent.com/a/ACg8ocKECXZ8Jm6ZBfO5NUewwlt2t_ojAjeLabxHzLnCjkAg__GzE6RR=s96-c',
-    given_name: 'elsayed',
-    family_name: 'mokdam',
-    iat: 1790111460,
-    exp: 1790115060,
-    jti: '09a60b492e2173b030d12a77c2c833fc12770bf7'
-  }
-*/
+

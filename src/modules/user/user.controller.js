@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { allUsers, profile, rotateToken } from "./user.service.js";
+import { allUsers, logout, profile, rotateToken } from "./user.service.js";
 import { $UTILS } from "../../common/utils/index.js";
 import { $MIDDLEWARES } from "../../middleware/index.js";
 import { $ENUMS } from "../../common/enum/index.js";
@@ -27,7 +27,7 @@ router.get(
   },
 );
 
-// Refresh Token
+// Rotate Token
 router.post(
   "/rotate-token",
   authentication(TokenTypeEnum.REFRESH),
@@ -40,3 +40,9 @@ router.post(
     return successResponse({ res, data });
   },
 );
+
+// Logout
+router.post("/logout", authentication(), async (req, res) => {
+  const { message } = await logout(req.payload, req.user, req.body);
+  return successResponse({ res, message });
+});

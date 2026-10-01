@@ -3,6 +3,7 @@ import { compare, hash } from "./hash.security.js";
 import {
   basicAuth,
   createLoginCredentials,
+  createRevokeToken,
   decodeToken,
   generateToken,
   verifyToken,
@@ -18,4 +19,5 @@ export const $SECURITY = {
   decodeToken,
   createLoginCredentials,
   basicAuth,
+  createRevokeToken,
 };

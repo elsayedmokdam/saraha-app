@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 import { DB_URI } from "../config.js";
 import { $MODELS } from "./models/index.js";
+import { connectRedis } from "./redis.connection.js";
 const { UserModel, MessageModel } = $MODELS;
 
 export const initializeDB = async (app, port) => {
@@ -8,6 +9,7 @@ export const initializeDB = async (app, port) => {
     // Test DB Connection
     await mongoose.connect(DB_URI);
     console.log("Database Connected Successfully ✅");
+    await connectRedis();
   } catch (error) {
     console.log(`Failed to Connect Database ❌ ${error}`);
     return;

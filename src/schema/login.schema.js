@@ -1,6 +1,17 @@
 import { z } from "zod";
+import { generalValidationFields } from "../common/validation.js";
+import { headerSchema } from "./header.schema.js";
 
-export const loginSchema = z.strictObject({
-  email: z.email(),
-  password: z.string().min(6).max(20),
-});
+export const loginBodySchema = (lang) => {
+  return z.strictObject({
+    email: generalValidationFields.email(lang),
+    password: generalValidationFields.password(lang),
+  });
+};
+
+export const loginSchema = (lang) => {
+  return z.object({
+    body: loginBodySchema(lang),
+    headers: headerSchema(),
+  });
+};

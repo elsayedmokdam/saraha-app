@@ -1,16 +1,24 @@
 import { Router } from "express";
-import { login, signup, signupWithGmail } from "./authentication.service.js";
+import {
+  login,
+  signup,
+  signupWithGmail,
+} from "./authentication.service.js";
+const router = Router();
+// -----------    COMMONS    -----------
 import { $UTILS } from "../../common/utils/index.js";
 import { $MIDDLEWARES } from "../../middleware/index.js";
 import { $SCHEMAS } from "../../schema/index.js";
-const router = Router();
-const { successResponse } = $UTILS;
+// -----------    COMMONS    -----------
+// ----------- DESTRUCTURING -----------
+const { successResponse, issuer } = $UTILS;
 const { validation } = $MIDDLEWARES;
 const { loginSchema, signupSchema } = $SCHEMAS;
+// ----------- DESTRUCTURING -----------
 
 // Signup
 router.post("/signup", validation(signupSchema), async (req, res) => {
-  const data = await signup(req.body);
+  const data = await signup(req.validated.body, issuer(req));
   return successResponse({
     res,
     data,
@@ -21,7 +29,7 @@ router.post("/signup", validation(signupSchema), async (req, res) => {
 
 // Login
 router.post("/login", validation(loginSchema), async (req, res) => {
-  const data = await login(req.body, `${req.protocol}://${req.host}`);
+  const data = await login(req.validated.body, issuer(req));
   return successResponse({ res, data, message: "Login Successful" });
 });
 
@@ -29,7 +37,7 @@ router.post("/login", validation(loginSchema), async (req, res) => {
 router.post("/signup-with-gmail", async (req, res) => {
   const { data, status, message } = await signupWithGmail(
     req.body,
-    `${req.protocol}://${req.host}`,
+    issuer(req),
   );
   return successResponse({ res, data, message, status });
 });
