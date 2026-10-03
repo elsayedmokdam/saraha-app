@@ -23,8 +23,8 @@ const { BadRequestException, UnauthorizedException, NotFoundException } =
 const { findById, findOne } = $REPOSITORIES;
 const { UserModel } = $MODELS;
 const { TokenTypeEnum, RoleEnum } = $ENUMS;
-const { userRevokeTokenKeyFormat } = $UTILS;
-const { exists, set } = $CACHE_SERVICES;
+const { userRevokeTokenKeyFormat, userCacheProfileKeyFormat } = $UTILS;
+const { exists, set, get } = $CACHE_SERVICES;
 
 // ----------- DESTRUCTURING -----------
 
@@ -98,13 +98,27 @@ export const decodeToken = async ({
       message: "Session Expired, Please Login Again",
     });
   }
-
+  if (await exists({ key: userCacheProfileKeyFormat({ userId: payload.sub }) })) {
+    const cachedUser = await get({
+      key: userCacheProfileKeyFormat({ userId: payload.sub }),
+    });
+    if (cachedUser) {
+      return { payload, user: cachedUser };
+    }
+  }
+  
   const user = await findById({ model: UserModel, id: payload.sub });
   if (!user) {
     throw UnauthorizedException({
       message: "Session Expired, Please Login Again",
     });
   }
+
+  await set({
+    key: userCacheProfileKeyFormat({ userId: payload.sub }),
+    value: user,
+    ttl: ACCESS_TOKEN_EXPIRES_IN,
+  });
 
   // Logout from all devices, then the user.changeCredentialsTime will be updated to the current time, and the payload.iat will be less than the user.changeCredentialsTime, so the token will be invalid
   if ((user.changeCredentialsTime?.getTime() ?? 0) > payload.iat * 1000) {

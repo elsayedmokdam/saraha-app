@@ -1,7 +1,7 @@
 import { client } from "../../DB/redis.connection.js";
 
 export const set = async ({ key, value, ttl = undefined } = {}) => {
-  if (typeof key === "object") {
+  if (typeof value === "object") {
     value = JSON.stringify(value);
   }
   return await client.set(key, value, { EX: ttl });

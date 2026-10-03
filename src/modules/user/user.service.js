@@ -65,7 +65,6 @@ export const logout = async (payload, user, { action = LogoutEnum.ONE }) => {
           userId: user._id,
         }),
       });
-      console.log({ revokeTokenKeys });
       if (revokeTokenKeys.length > 0) {
         await del({ key: revokeTokenKeys });
       }

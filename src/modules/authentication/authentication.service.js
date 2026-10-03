@@ -12,7 +12,7 @@ const { UserModel } = $MODELS;
 const { create, findOne } = $REPOSITORIES;
 const { ConflictException, NotFoundException, BadRequestException } =
   $EXCEPTIONS;
-const { hash, compare, encryption, createLoginCredentials, createRevokeToken } =
+const { hash, compare, encryption, createLoginCredentials } =
   $SECURITY;
 const { ProviderEnum, RoleEnum } = $ENUMS;
 // ----------- DESTRUCTURING -----------
