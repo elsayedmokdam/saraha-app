@@ -11,8 +11,8 @@ import { $CACHE_SERVICES } from "../../common/services/index.js";
 // -----------    COMMONS    -----------
 // ----------- DESTRUCTURING -----------
 const { UserModel } = $MODELS;
-const { find } = $REPOSITORIES;
-const { userBaseRevokeTokenKeyFormat } = $UTILS;
+const { find, findById } = $REPOSITORIES;
+const { userBaseRevokeTokenKeyFormat, userCacheProfileKeyFormat } = $UTILS;
 const { ConflictException } = $EXCEPTIONS;
 const { createLoginCredentials, createRevokeToken } = $SECURITY;
 const { LogoutEnum } = $ENUMS;
@@ -35,7 +35,7 @@ export const allUsers = async (user) => {
 
 export const rotateToken = async (payload, user, issuer) => {
   const accessExpiresIn = (payload.iat + ACCESS_TOKEN_EXPIRES_IN) * 1000; // Expires in in milliseconds
-  const currentTime = Date.now() + 5 * 60 * 1000; // Current time in milliseconds + 10 minutes
+  const currentTime = Date.now() + 10 * 60 * 1000; // Current time in milliseconds + 10 minutes
 
   // Meaning the access token is still valid
   if (accessExpiresIn > currentTime) {
@@ -55,24 +55,54 @@ export const rotateToken = async (payload, user, issuer) => {
   };
 };
 
-export const logout = async (payload, user, { action = LogoutEnum.ONE }) => {
+export const logout = async (payload, { action = LogoutEnum.ONE }) => {
+  const userId = payload.sub;
+
   switch (action) {
-    case LogoutEnum.ALL:
-      user.changeCredentialsTime = Date.now();
-      await user.save();
+    case LogoutEnum.ALL: {
+      // Get Original User From DB because user Might Be Cached in Redis
+      const currentUser = await findById({
+        model: UserModel,
+        id: userId,
+      });
+
+      if (!currentUser) {
+        throw UnauthorizedException({
+          message: "Session Expired, Please Login Again",
+        });
+      }
+
+      currentUser.changeCredentialsTime = new Date();
+      await currentUser.save();
+
+      // Delete All Revoked Token Keys
       const revokeTokenKeys = await keys({
         prefix: userBaseRevokeTokenKeyFormat({
-          userId: user._id,
+          userId: currentUser._id,
         }),
       });
+
       if (revokeTokenKeys.length > 0) {
-        await del({ key: revokeTokenKeys });
+        await del({
+          key: revokeTokenKeys,
+        });
       }
       break;
-    default:
-      await createRevokeToken({ payload });
+    }
+    default: {
+      await createRevokeToken({
+        payload,
+      });
       break;
+    }
   }
-
-  return { message: "Logout Successful" };
+  // Delete Profile From Cache
+  await del({
+    key: userCacheProfileKeyFormat({
+      userId: payload.sub,
+    }),
+  });
+  return {
+    message: "Logout Successful",
+  };
 };

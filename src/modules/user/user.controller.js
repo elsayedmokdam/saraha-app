@@ -49,7 +49,7 @@ router.post(
   authentication(),
   validation(logoutSchema),
   async (req, res) => {
-    const { message } = await logout(req.payload, req.user, req.body);
+    const { message } = await logout(req.payload, req.body);
     return successResponse({ res, message });
   },
 );

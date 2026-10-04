@@ -36,11 +36,17 @@ export const generateToken = async ({
   return jwt.sign(payload, secret, options);
 };
 
-export const verifyToken = async ({
-  token = "",
-  secret = ACCESS_USER_TOKEN_SIGNATURE,
-} = {}) => {
-  return jwt.verify(token, secret);
+export const verifyToken = async ({ token, secret }) => {
+  try {
+    return jwt.verify(token, secret);
+  } catch (error) {
+    if (error.name === "TokenExpiredError") {
+      throw UnauthorizedException({
+        message: "Session Expired, Please Login Again",
+      });
+    }
+    throw error;
+  }
 };
 
 const getTokenSignatures = async ({
