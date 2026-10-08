@@ -1,6 +1,4 @@
-import { $EXCEPTIONS } from "../common/exceptions/index.js";
-
-const { ForbiddenException } = $EXCEPTIONS;
+import { ForbiddenException } from "../common/exceptions/index.js";
 
 export const authorizationMiddleware = (accessRole) => {
   return (req, res, next) => {

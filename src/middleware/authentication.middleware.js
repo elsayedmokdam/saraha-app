@@ -1,13 +1,6 @@
-// -----------    COMMONS    -----------
-import { $ENUMS } from "../common/enum/index.js";
-import { $EXCEPTIONS } from "../common/exceptions/index.js";
-import { $SECURITY } from "../common/security/index.js";
-// -----------    COMMONS    -----------
-// ----------- DESTRUCTURING -----------
-const { UnauthorizedException } = $EXCEPTIONS;
-const { decodeToken, basicAuth } = $SECURITY;
-const { TokenTypeEnum } = $ENUMS;
-// ----------- DESTRUCTURING -----------
+import { TokenTypeEnum } from "../common/enum/index.js";
+import { UnauthorizedException } from "../common/exceptions/index.js";
+import { basicAuth, decodeToken } from "../common/security/index.js";
 
 export const authenticationMiddleware = (tokenType = TokenTypeEnum.ACCESS) => {
   return async (req, res, next) => {

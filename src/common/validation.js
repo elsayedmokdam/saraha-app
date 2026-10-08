@@ -1,6 +1,5 @@
 import { z } from "zod";
-import { $ENUMS } from "./enum/index.js";
-const { LanguageEnum } = $ENUMS;
+import { LanguageEnum } from "./enum/index.js";
 
 const matchFields = ({ data, field, match, ctx, lang }) => {
   if (data[field] !== data[match]) {
@@ -66,6 +65,14 @@ export const generalValidationFields = {
         lang == LanguageEnum.AR
           ? "من فضلك ادخل رقم هاتف مصري صحيح"
           : "Only valid Egyptian phone number is allowed.",
+    }),
+
+  otp: (lang) =>
+    z.string().regex(/^[0-9]{6}$/, {
+      message:
+        lang == LanguageEnum.AR
+          ? "من فضلك ادخل رمز التحقق صحيح"
+          : "Only valid OTP is allowed.",
     }),
 
   matchFields,

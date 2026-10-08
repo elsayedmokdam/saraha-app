@@ -56,3 +56,13 @@ export const ForbiddenException = ({
     options: { cause: { status: 403, issues } },
   });
 };
+
+export const TooManyRequsetException = ({
+  message = "Too Many Request",
+  issues = {},
+} = {}) => {
+  return AppException({
+    message,
+    options: { cause: { status: 429, issues } },
+  });
+};

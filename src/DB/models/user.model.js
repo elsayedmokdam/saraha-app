@@ -1,6 +1,5 @@
 import mongoose from "mongoose";
-import { $ENUMS } from "../../common/enum/index.js";
-const { GenderEnum, RoleEnum, ProviderEnum } = $ENUMS;
+import { GenderEnum, ProviderEnum, RoleEnum } from "../../common/enum/index.js";
 
 const userSchema = new mongoose.Schema(
   {

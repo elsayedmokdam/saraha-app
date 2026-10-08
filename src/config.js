@@ -6,6 +6,7 @@ config({ path: resolve(`.env.${NODE_ENV}`) });
 
 // Application and Database Configurations
 export const PORT = parseInt(process.env.PORT ?? "3000");
+export const APP_NAME = process.env.APP_NAME ?? "saraha_app";
 export const DB_URI = process.env.DB_URI ?? "mongodb://localhost:27017/";
 export const REDIS_URI = process.env.REDIS_URI;
 export const ENC_KEY = process.env.ENC_KEY ?? "secret";
@@ -27,3 +28,8 @@ export const WEB_CLIENT_IDs = process.env.WEB_CLIENT_IDs?.split(",")??[""];
 // Mail Credentials
 export const APP_EMAIL = process.env.APP_EMAIL;
 export const APP_PASSWORD = process.env.APP_PASSWORD;
+
+// OTP
+export const OTP_EXPIRES_IN = parseInt(process.env.OTP_EXPIRES_IN ?? "120");
+export const OTP_MAX_TRIALS = parseInt(process.env.OTP_MAX_TRIALS ?? "3");
+export const OTP_BLOCK_TIME = parseInt(process.env.OTP_BLOCK_TIME ?? "300");

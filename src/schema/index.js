@@ -1,11 +1,9 @@
-import { headerSchema } from "./header.schema.js";
-import { loginSchema } from "./login.schema.js";
-import { logoutSchema } from "./logout.schema.js";
-import { signupSchema } from "./signup.schema.js";
-
-export const $SCHEMAS = {
-  loginSchema,
-  signupSchema,
-  headerSchema,
-  logoutSchema,
-};
+export * from "./confirmEmail.schema.js";
+export * from "./resendConfirmEmail.schema.js";
+export * from "./login.schema.js";
+export * from "./logout.schema.js";
+export * from "./signup.schema.js";
+export * from "./header.schema.js";
+export * from "./forgotPassword.schema.js";
+export * from "./verifyResetPassword.schema.js";
+export * from "./resetPassword.schema.js";

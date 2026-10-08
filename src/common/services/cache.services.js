@@ -26,7 +26,8 @@ export const update = async ({ key, value, ttl = undefined } = {}) => {
 };
 
 export const del = async ({ key }) => {
-  return await client.del(key);
+  console.log({key})
+  return key.length && (await client.del(key));
 };
 
 // Get all keys with a specific prefix
@@ -42,4 +43,8 @@ export const ttl = async ({ key }) => {
 // Set the time-to-live (TTL) of a key in seconds
 export const expire = async ({ key, ttl }) => {
   return await client.expire(key, ttl);
+};
+
+export const incrBy = async ({ key, value = 1 }) => {
+  return await client.incrBy(key, value);
 };

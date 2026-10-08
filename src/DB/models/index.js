@@ -1,7 +1,2 @@
-import { MessageModel } from "./message.model.js";
-import { UserModel } from "./user.model.js";
-
-export const $MODELS = {
-  UserModel,
-  MessageModel,
-};
+export { MessageModel } from "./message.model.js";
+export { UserModel } from "./user.model.js";

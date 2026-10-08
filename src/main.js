@@ -1,10 +1,13 @@
 import express from "express";
 import cors from "cors";
 import { PORT } from "./config.js";
-import { $MIDDLEWARES } from "./middleware/index.js";
 import { initializeDB } from "./DB/connection.db.js";
-import { $MODULES } from "./modules/index.js";
-const { authenticationController, userController, messageController } = $MODULES;
+import {
+  authenticationController,
+  messageController,
+  userController,
+} from "./modules/index.js";
+import { globalErrorHandler } from "./middleware/index.js";
 const app = express();
 
 // Database Connection
@@ -12,6 +15,7 @@ await initializeDB(app, PORT);
 
 // Application Level Middleware
 app.use(cors(), express.json());
+app.use("/assets", express.static("./assets"))
 
 //------------- Application Routes -------------
 // Test Route
@@ -30,4 +34,4 @@ app.all("{/*dummy}", (req, res) => {
 });
 
 // Global Error Handler
-app.use($MIDDLEWARES.globalErrorHandler);
+app.use(globalErrorHandler);

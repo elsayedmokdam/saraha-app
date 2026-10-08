@@ -1,26 +1,40 @@
 import { ACCESS_TOKEN_EXPIRES_IN } from "../../config.js";
+import {
+  ConflictException,
+  UnauthorizedException,
+} from "../../common/exceptions/index.js";
+import {
+  find,
+  findById,
+  findByIdAndUpdate,
+} from "../../common/repository/index.js";
+import {
+  createLoginCredentials,
+  createRevokeToken,
+} from "../../common/security/index.js";
+import {
+  userBaseRevokeTokenKeyFormat,
+  userCacheProfileKeyFormat,
+} from "../../common/utils/index.js";
+import { UserModel } from "../../DB/models/index.js";
+import { LogoutEnum } from "../../common/enum/index.js";
+import { del, keys } from "../../common/services/index.js";
 
-// -----------    COMMONS    -----------
-import { $EXCEPTIONS } from "../../common/exceptions/index.js";
-import { $REPOSITORIES } from "../../common/repository/index.js";
-import { $SECURITY } from "../../common/security/index.js";
-import { $UTILS } from "../../common/utils/index.js";
-import { $MODELS } from "../../DB/models/index.js";
-import { $ENUMS } from "../../common/enum/index.js";
-import { $CACHE_SERVICES } from "../../common/services/index.js";
-// -----------    COMMONS    -----------
-// ----------- DESTRUCTURING -----------
-const { UserModel } = $MODELS;
-const { find, findById } = $REPOSITORIES;
-const { userBaseRevokeTokenKeyFormat, userCacheProfileKeyFormat } = $UTILS;
-const { ConflictException } = $EXCEPTIONS;
-const { createLoginCredentials, createRevokeToken } = $SECURITY;
-const { LogoutEnum } = $ENUMS;
-const { del, keys } = $CACHE_SERVICES;
-// ----------- DESTRUCTURING -----------
-
-export const profile = async (user) => {
+export const profile = async ({ userId }) => {
+  const user = await findById({
+    model: UserModel,
+    id: userId,
+  });
   return user;
+};
+
+export const uploadProfileImage = async ({ user, file }) => {
+  const updatedUser = await findByIdAndUpdate({
+    model: UserModel,
+    id: user._id,
+    update: { image: file.path },
+  });
+  return updatedUser;
 };
 
 export const allUsers = async (user) => {

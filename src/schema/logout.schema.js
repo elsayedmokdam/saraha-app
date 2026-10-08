@@ -1,7 +1,6 @@
 import { z } from "zod";
-import { $ENUMS } from "../common/enum/index.js";
+import { LanguageEnum, LogoutEnum } from "../common/enum/index.js";
 import { headerSchema } from "./header.schema.js";
-const { LogoutEnum, LanguageEnum } = $ENUMS;
 
 export const logoutSchema = (lang) => {
   return z.object({

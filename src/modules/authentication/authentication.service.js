@@ -1,21 +1,30 @@
 import { OAuth2Client } from "google-auth-library";
 import { WEB_CLIENT_IDs } from "../../config.js";
-// -----------    COMMONS    -----------
-import { $EXCEPTIONS } from "../../common/exceptions/index.js";
-import { $REPOSITORIES } from "../../common/repository/index.js";
-import { $MODELS } from "../../DB/models/index.js";
-import { $SECURITY } from "../../common/security/index.js";
-import { $ENUMS } from "../../common/enum/index.js";
-// -----------    COMMONS    -----------
-// ----------- DESTRUCTURING -----------
-const { UserModel } = $MODELS;
-const { create, findOne } = $REPOSITORIES;
-const { ConflictException, NotFoundException, BadRequestException } =
-  $EXCEPTIONS;
-const { hash, compare, encryption, createLoginCredentials } =
-  $SECURITY;
-const { ProviderEnum, RoleEnum } = $ENUMS;
-// ----------- DESTRUCTURING -----------
+import {
+  BadRequestException,
+  ConflictException,
+  NotFoundException,
+} from "../../common/exceptions/index.js";
+import { create, findOne } from "../../common/repository/index.js";
+import { UserModel } from "../../DB/models/index.js";
+import {
+  compare,
+  createLoginCredentials,
+  encryption,
+  hash,
+} from "../../common/security/index.js";
+import {
+  EmailSubjectEnum,
+  ProviderEnum,
+  RoleEnum,
+} from "../../common/enum/index.js";
+import {
+  sendEmailOTP,
+  userBaseRevokeTokenKeyFormat,
+  userCacheOTPKeyFormat,
+  userCacheProfileKeyFormat,
+} from "../../common/utils/index.js";
+import { del, get, keys } from "../../common/services/index.js";
 
 const client = new OAuth2Client();
 async function verifyGoogleIDToken(idToken) {
@@ -23,8 +32,8 @@ async function verifyGoogleIDToken(idToken) {
     idToken,
     audience: WEB_CLIENT_IDs,
   });
+
   const payload = ticket.getPayload();
-  // console.log({ payload });
   if (!payload?.email_verified) {
     throw BadRequestException({ message: "Email not verified" });
   }
@@ -39,12 +48,11 @@ export const signupWithGmail = async ({ idToken }, issuer) => {
     model: UserModel,
     query: { email },
   });
-  // console.log({ existAccount });
 
   if (existAccount) {
     // 1. Exist and Provider is not Google, then Conflict
     if (existAccount.provider !== ProviderEnum.GOOGLE) {
-      ConflictException({ message: "Invalid Account Provider" });
+      throw ConflictException({ message: "Invalid Account Provider" });
     }
     // 2. Exist and Provider is Google, then Login
     return {
@@ -74,7 +82,6 @@ export const signupWithGmail = async ({ idToken }, issuer) => {
       },
     ],
   });
-  // console.log(user);
 
   return {
     status: 201,
@@ -95,7 +102,8 @@ export const signup = async (inputs) => {
     model: UserModel,
     query: { email: inputs.email },
   });
-  if (checkDuplicate) ConflictException({ message: "Email Already Exists" });
+  if (checkDuplicate)
+    throw ConflictException({ message: "Email Already Exists" });
   const user = await create({
     model: UserModel,
     data: [
@@ -108,6 +116,11 @@ export const signup = async (inputs) => {
     ],
     options: { validateBeforeSave: true },
   });
+
+  await sendEmailOTP({
+    email: inputs.email,
+    subject: EmailSubjectEnum.CONFIRM_EMAIL,
+  });
   return user;
 };
 
@@ -115,14 +128,23 @@ export const signup = async (inputs) => {
 export const login = async ({ email, password }, issuer) => {
   const user = await findOne({
     model: UserModel,
-    query: { email, provider: ProviderEnum.SYSTEM },
+    query: {
+      email,
+      provider: ProviderEnum.SYSTEM,
+      // confirmEmail: { $exists: true },
+    },
   });
 
   // Login with Gmail and try to Login with System
-  if (!user) NotFoundException({ message: "Invalid Login Credentials" });
+  if (!user) throw NotFoundException({ message: "Invalid Login Credentials" });
 
+  // Login with System But Email Not Confirmed
+  if (!user.confirmEmail)
+    throw NotFoundException({ message: "Please Confirm Email First to Login" });
+
+  // Check Password
   const match = await compare(password, user.password);
-  if (!match) NotFoundException({ message: "Invalid Login Credentials" });
+  if (!match) throw NotFoundException({ message: "Invalid Login Credentials" });
 
   return await createLoginCredentials({
     payload: {
@@ -133,4 +155,166 @@ export const login = async ({ email, password }, issuer) => {
   });
 };
 
+// Confirm Email
+export const confirmEmail = async ({ email, otp }) => {
+  const user = await findOne({
+    model: UserModel,
+    query: {
+      email,
+      provider: ProviderEnum.SYSTEM,
+      // confirmEmail: { $exists: false },
+    },
+  });
+  // If User Not Found
+  if (!user) throw NotFoundException({ message: "Invalid Login Credentials" });
 
+  // If User Email Already Confirmed
+  if (user.confirmEmail)
+    throw NotFoundException({ message: "Email Already Confirmed" });
+
+  const cacheCode = await get({
+    key: userCacheOTPKeyFormat({
+      email: user.email,
+      enumType: EmailSubjectEnum.CONFIRM_EMAIL,
+    }),
+  });
+  if (!cacheCode || !(await compare(otp, cacheCode)))
+    throw NotFoundException({ message: "Invalid OTP, Ask for Resend" });
+
+  user.confirmEmail = Date.now();
+  await user.save();
+
+  // Delete Cached OTP
+  await del({
+    key: await keys({
+      prefix: userCacheOTPKeyFormat({
+        email: user.email,
+        enumType: EmailSubjectEnum.CONFIRM_EMAIL,
+      }),
+    }),
+  });
+  return user;
+};
+
+// Resend Confirm Email OTP
+export const resendConfirmEmailOTP = async ({ email }) => {
+  const user = await findOne({
+    model: UserModel,
+    query: {
+      email,
+      provider: ProviderEnum.SYSTEM,
+      // confirmEmail: { $exists: false },
+    },
+  });
+  // If User Not Found
+  if (!user) throw NotFoundException({ message: "Invalid Login Credentials" });
+
+  // If User Email Already Confirmed
+  if (user.confirmEmail)
+    throw NotFoundException({ message: "Email Already Confirmed" });
+
+  await sendEmailOTP({
+    email: user.email,
+    subject: EmailSubjectEnum.CONFIRM_EMAIL,
+  });
+  return "OTP Sent Successfully";
+};
+
+export const forgotPassword = async ({ email }) => {
+  const user = await findOne({
+    model: UserModel,
+    query: {
+      email,
+      provider: ProviderEnum.SYSTEM,
+      // confirmEmail: { $exists: true },
+    },
+  });
+  // If User Not Found
+  if (!user) throw NotFoundException({ message: "Invalid Email" });
+
+  // If User Email Not Confirmed
+  if (!user.confirmEmail)
+    throw NotFoundException({ message: "Please Confirm Email First" });
+
+  await sendEmailOTP({
+    email: user.email,
+    subject: EmailSubjectEnum.FORGOT_PASSWORD,
+  });
+  return "OTP Sent Successfully";
+};
+
+export const verifyResetPasswordOTP = async ({ email, otp }) => {
+  const user = await findOne({
+    model: UserModel,
+    query: {
+      email,
+      provider: ProviderEnum.SYSTEM,
+      // confirmEmail: { $exists: true },
+    },
+  });
+  // If User Not Found
+  if (!user) throw NotFoundException({ message: "Invalid Email" });
+
+  // If User Email Not Confirmed
+  if (!user.confirmEmail)
+    throw NotFoundException({ message: "Please Confirm Email First" });
+
+  const cacheCode = await get({
+    key: userCacheOTPKeyFormat({
+      email: user.email,
+      enumType: EmailSubjectEnum.FORGOT_PASSWORD,
+    }),
+  });
+
+  if (!cacheCode || !(await compare(otp, cacheCode)))
+    throw NotFoundException({ message: "Invalid OTP, Ask for Resend" });
+  return {
+    user,
+    message: "OTP Verified Successfully",
+  };
+};
+
+export const resetPassword = async ({
+  email,
+  newPassword,
+  confirmPassword,
+  otp,
+}) => {
+  const { user } = await verifyResetPasswordOTP({ email, otp });
+  user.password = await hash(newPassword);
+  user.confirmPassword = await hash(confirmPassword);
+  // To Logout User From All Devices
+  user.changeCredentialsTime = Date.now();
+  await user.save();
+
+  // Delete Cached OTP
+  await del({
+    key: await keys({
+      prefix: userCacheOTPKeyFormat({
+        email: user.email,
+        enumType: EmailSubjectEnum.FORGOT_PASSWORD,
+      }),
+    }),
+  });
+
+  // Delete Cached Revoked Token Keys
+  await del({
+    key: await keys({
+      prefix: userBaseRevokeTokenKeyFormat({
+        userId: user._id,
+      }),
+    }),
+  });
+
+  // Delete Cached User Profile
+  await del({
+    key: userCacheProfileKeyFormat({
+      userId: user._id,
+    }),
+  });
+  return {
+    user,
+    message:
+      "Password Reset Successfully, Please Login Again With New Password",
+  };
+};

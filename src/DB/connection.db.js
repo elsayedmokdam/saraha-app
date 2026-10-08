@@ -1,8 +1,7 @@
 import mongoose from "mongoose";
 import { DB_URI } from "../config.js";
-import { $MODELS } from "./models/index.js";
+import { MessageModel, UserModel } from "./models/index.js";
 import { connectRedis } from "./redis.connection.js";
-const { UserModel, MessageModel } = $MODELS;
 
 export const initializeDB = async (app, port) => {
   try {

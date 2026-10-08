@@ -1,22 +1,63 @@
 import { Router } from "express";
-import { allUsers, logout, profile, rotateToken } from "./user.service.js";
-import { $UTILS } from "../../common/utils/index.js";
-import { $MIDDLEWARES } from "../../middleware/index.js";
-import { $ENUMS } from "../../common/enum/index.js";
-import { $SCHEMAS } from "../../schema/index.js";
+import {
+  allUsers,
+  logout,
+  profile,
+  rotateToken,
+  uploadProfileImage,
+} from "./user.service.js";
+import {
+  fileValidations,
+  localFileUpload,
+  successResponse,
+} from "../../common/utils/index.js";
+import {
+  authenticationMiddleware as authentication,
+  authorizationMiddleware as authorization,
+  uploadMiddleware,
+  validationMiddleware as validation,
+} from "../../middleware/index.js";
+import { RoleEnum, TokenTypeEnum } from "../../common/enum/index.js";
+import { logoutSchema } from "../../schema/index.js";
 const router = Router();
-const { successResponse } = $UTILS;
-const { authentication, authorization, validation } = $MIDDLEWARES;
-const { TokenTypeEnum, RoleEnum } = $ENUMS;
-const { logoutSchema } = $SCHEMAS;
 
 export default router;
 
 // Get Profile
 router.get("/profile", authentication(), async (req, res) => {
-  const data = await profile(req.user);
+  const data = await profile({ userId: req.user._id });
   return successResponse({ res, data });
 });
+
+// Upload Profile Image
+router.patch(
+  "/profile-image",
+  authentication(),
+  uploadMiddleware({
+    multerMiddleware: localFileUpload({
+      validation: fileValidations,
+    })
+    .single("attachment"),
+    // .fields([
+    //   { name: "image", maxCount: 1 },
+    //   { name: "cover", maxCount: 1 },
+    // ]),
+    // .array("attachments", 3),
+    validation: fileValidations.image,
+    customPath: "profile",
+  }),
+  async (req, res) => {
+    // ------------ Array ------------ //
+    // const files = req.files.map((file) => file.path);
+    // console.log({ files });
+    // ------------ Fields ------------ //
+    // const files = Object.entries(req.files).map(([key, file]) => file[0].path);
+    // console.log({ files });
+    // ------------ Single ------------ //
+    const data = await uploadProfileImage({ user: req.user, file: req.file });
+    return successResponse({ res, data });
+  },
+);
 
 // Get All Users
 router.get(

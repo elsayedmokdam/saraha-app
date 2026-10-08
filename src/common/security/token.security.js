@@ -9,24 +9,19 @@ import {
 } from "../../config.js";
 import { compare } from "./hash.security.js";
 import { randomUUID } from "node:crypto";
-// -----------    COMMONS    -----------
-import { $EXCEPTIONS } from "../exceptions/index.js";
-import { $REPOSITORIES } from "../repository/index.js";
-import { $MODELS } from "../../DB/models/index.js";
-import { $ENUMS } from "../enum/index.js";
-import { $CACHE_SERVICES } from "../services/index.js";
-import { $UTILS } from "../utils/index.js";
-// -----------    COMMONS    -----------
-// ----------- DESTRUCTURING -----------
-const { BadRequestException, UnauthorizedException, NotFoundException } =
-  $EXCEPTIONS;
-const { findById, findOne } = $REPOSITORIES;
-const { UserModel } = $MODELS;
-const { TokenTypeEnum, RoleEnum } = $ENUMS;
-const { userRevokeTokenKeyFormat, userCacheProfileKeyFormat } = $UTILS;
-const { exists, set, get } = $CACHE_SERVICES;
-
-// ----------- DESTRUCTURING -----------
+import {
+  BadRequestException,
+  NotFoundException,
+  UnauthorizedException,
+} from "../exceptions/index.js";
+import { findById, findOne } from "../repository/index.js";
+import { UserModel } from "../../DB/models/index.js";
+import { RoleEnum, TokenTypeEnum } from "../enum/index.js";
+import { exists, get, set } from "../services/index.js";
+import {
+  userCacheProfileKeyFormat,
+  userRevokeTokenKeyFormat,
+} from "../utils/index.js";
 
 export const generateToken = async ({
   payload = {},
@@ -92,19 +87,28 @@ export const decodeToken = async ({
     throw BadRequestException({ message: "Missing Token Payload" });
   }
 
-  const revoked = await exists({
-    key: userRevokeTokenKeyFormat({
-      userId: payload.sub,
-      jti: payload.jti,
-    }),
-  });
-
-  if (revoked) {
+  // Check if the token is revoked
+  if (
+    await exists({
+      key: userRevokeTokenKeyFormat({
+        userId: payload.sub,
+        jti: payload.jti,
+      }),
+    })
+  ) {
     throw UnauthorizedException({
       message: "Session Expired, Please Login Again",
     });
   }
-  if (await exists({ key: userCacheProfileKeyFormat({ userId: payload.sub }) })) {
+  
+  // Check if the user is cached
+  if (
+    await exists({
+      key: userCacheProfileKeyFormat({
+        userId: payload.sub,
+      }),
+    })
+  ) {
     const cachedUser = await get({
       key: userCacheProfileKeyFormat({ userId: payload.sub }),
     });
@@ -112,7 +116,8 @@ export const decodeToken = async ({
       return { payload, user: cachedUser };
     }
   }
-  
+
+  // If not cached, then Get User From DB
   const user = await findById({ model: UserModel, id: payload.sub });
   if (!user) {
     throw UnauthorizedException({
@@ -120,6 +125,7 @@ export const decodeToken = async ({
     });
   }
 
+  // Cache the user
   await set({
     key: userCacheProfileKeyFormat({ userId: payload.sub }),
     value: user,
