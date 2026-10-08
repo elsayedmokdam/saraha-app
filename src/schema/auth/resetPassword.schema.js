@@ -1,4 +1,4 @@
-import { generalValidationFields } from "../common/validation.js";
+import { generalValidationFields } from "../../common/validation.js";
 import { confirmEmailSchema } from "./confirmEmail.schema.js";
 
 export const resetPasswordSchema = (lang) => {

@@ -9,7 +9,6 @@ import {
   signupWithGmail,
   verifyResetPasswordOTP,
 } from "./authentication.service.js";
-const router = Router();
 import { issuer, successResponse } from "../../common/utils/index.js";
 import { validationMiddleware as validation } from "../../middleware/index.js";
 import {
@@ -21,6 +20,7 @@ import {
   signupSchema,
   verifyResetPasswordSchema,
 } from "../../schema/index.js";
+const router = Router();
 
 // Signup with Gmail
 router.post("/signup-with-gmail", async (req, res) => {

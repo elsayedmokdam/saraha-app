@@ -1,8 +1,8 @@
 import { z } from "zod";
-import { generalValidationFields } from "../common/validation.js";
-import { GenderEnum, LanguageEnum, RoleEnum } from "../common/enum/index.js";
+import { generalValidationFields } from "../../common/validation.js";
+import { GenderEnum, LanguageEnum, RoleEnum } from "../../common/enum/index.js";
 import { loginBodySchema } from "./login.schema.js";
-import { headerSchema } from "./header.schema.js";
+import { headerSchema } from "../common/header.schema.js";
 
 // Use safeExtend instead of extend if using refine or superRefine
 export const signupSchema = (lang) => {

@@ -1,6 +1,6 @@
 import { z } from "zod";
-import { generalValidationFields } from "../common/validation.js";
-import { headerSchema } from "./header.schema.js";
+import { generalValidationFields } from "../../common/validation.js";
+import { headerSchema } from "../common/header.schema.js";
 
 export const confirmEmailSchema = (lang) => {
   return z.object({
