@@ -1,7 +1,6 @@
 import { Router } from "express";
 import {
   allUsers,
-  logout,
   profile,
   rotateToken,
   uploadProfileImage,
@@ -18,7 +17,6 @@ import {
   validationMiddleware as validation,
 } from "../../middleware/index.js";
 import { RoleEnum, TokenTypeEnum } from "../../common/enum/index.js";
-import { logoutSchema } from "../../schema/index.js";
 const router = Router();
 
 export default router;
@@ -36,8 +34,7 @@ router.patch(
   uploadMiddleware({
     multerMiddleware: localFileUpload({
       validation: fileValidations,
-    })
-    .single("attachment"),
+    }).single("attachment"),
     // .fields([
     //   { name: "image", maxCount: 1 },
     //   { name: "cover", maxCount: 1 },
@@ -81,16 +78,5 @@ router.post(
       `${req.protocol}://${req.host}`,
     );
     return successResponse({ res, data });
-  },
-);
-
-// Logout
-router.post(
-  "/logout",
-  authentication(),
-  validation(logoutSchema),
-  async (req, res) => {
-    const { message } = await logout(req.payload, req.body);
-    return successResponse({ res, message });
   },
 );

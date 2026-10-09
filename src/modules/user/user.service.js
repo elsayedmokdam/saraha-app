@@ -12,13 +12,8 @@ import {
   createLoginCredentials,
   createRevokeToken,
 } from "../../common/security/index.js";
-import {
-  userBaseRevokeTokenKeyFormat,
-  userCacheProfileKeyFormat,
-} from "../../common/utils/index.js";
+
 import { UserModel } from "../../DB/models/index.js";
-import { LogoutEnum } from "../../common/enum/index.js";
-import { del, keys } from "../../common/services/index.js";
 
 export const profile = async ({ userId }) => {
   const user = await findById({
@@ -66,57 +61,5 @@ export const rotateToken = async (payload, user, issuer) => {
     access_token,
     refresh_token,
     user,
-  };
-};
-
-export const logout = async (payload, { action = LogoutEnum.ONE }) => {
-  const userId = payload.sub;
-
-  switch (action) {
-    case LogoutEnum.ALL: {
-      // Get Original User From DB because user Might Be Cached in Redis
-      const currentUser = await findById({
-        model: UserModel,
-        id: userId,
-      });
-
-      if (!currentUser) {
-        throw UnauthorizedException({
-          message: "Session Expired, Please Login Again",
-        });
-      }
-
-      currentUser.changeCredentialsTime = new Date();
-      await currentUser.save();
-
-      // Delete All Revoked Token Keys
-      const revokeTokenKeys = await keys({
-        prefix: userBaseRevokeTokenKeyFormat({
-          userId: currentUser._id,
-        }),
-      });
-
-      if (revokeTokenKeys.length > 0) {
-        await del({
-          key: revokeTokenKeys,
-        });
-      }
-      break;
-    }
-    default: {
-      await createRevokeToken({
-        payload,
-      });
-      break;
-    }
-  }
-  // Delete Profile From Cache
-  await del({
-    key: userCacheProfileKeyFormat({
-      userId: payload.sub,
-    }),
-  });
-  return {
-    message: "Logout Successful",
   };
 };

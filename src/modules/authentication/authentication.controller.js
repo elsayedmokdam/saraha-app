@@ -3,18 +3,23 @@ import {
   confirmEmail,
   forgotPassword,
   login,
+  logout,
   resendConfirmEmailOTP,
   resetPassword,
   signup,
   signupWithGmail,
+  twoFALogin,
+  verify2FALogin,
   verifyResetPasswordOTP,
 } from "./authentication.service.js";
 import { issuer, successResponse } from "../../common/utils/index.js";
 import { validationMiddleware as validation } from "../../middleware/index.js";
+import { authenticationMiddleware as authentication } from "../../middleware/index.js";
 import {
   confirmEmailSchema,
   forgotPasswordSchema,
   loginSchema,
+  logoutSchema,
   resendConfirmEmailSchema,
   resetPasswordSchema,
   signupSchema,
@@ -47,6 +52,33 @@ router.post("/login", validation(loginSchema), async (req, res) => {
   const data = await login(req.validated.body, issuer(req));
   return successResponse({ res, data, message: "Login Successful" });
 });
+
+// 2FA Login
+router.post("/2fa/login", validation(loginSchema), async (req, res) => {
+  const data = await twoFALogin(req.validated.body, issuer(req));
+  return successResponse({
+    res,
+    status: 201,
+    data,
+    message: "Two Step Verification Activated, OTP Sent Successfully",
+  });
+});
+
+// Verify 2FA OTP
+router.post(
+  "/2fa/verify-otp",
+  validation(confirmEmailSchema),
+  async (req, res) => {
+    const data = await verify2FALogin(
+      {
+        email: req.body.email,
+        otp: req.body.otp,
+      },
+      issuer(req),
+    );
+    return successResponse({ res, data });
+  },
+);
 
 // Resend Confirm Email OTP
 router.post(
@@ -100,6 +132,17 @@ router.patch(
     console.log(req.validated.body);
     const { user, message } = await resetPassword(req.validated.body);
     return successResponse({ res, data: user, message });
+  },
+);
+
+// Logout
+router.post(
+  "/logout",
+  authentication(),
+  validation(logoutSchema),
+  async (req, res) => {
+    const { message } = await logout(req.payload, req.body);
+    return successResponse({ res, message });
   },
 );
 

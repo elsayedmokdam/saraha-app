@@ -33,3 +33,4 @@ export const APP_PASSWORD = process.env.APP_PASSWORD;
 export const OTP_EXPIRES_IN = parseInt(process.env.OTP_EXPIRES_IN ?? "120");
 export const OTP_MAX_TRIALS = parseInt(process.env.OTP_MAX_TRIALS ?? "3");
 export const OTP_BLOCK_TIME = parseInt(process.env.OTP_BLOCK_TIME ?? "300");
+export const TWO_FA_EXPIRESIN = parseInt(process.env.TWO_FA_EXPIRESIN ?? "120");
