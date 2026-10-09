@@ -5,4 +5,3 @@ export const userBaseRevokeTokenKeyFormat = ({ userId }) => {
 export const userRevokeTokenKeyFormat = ({ userId, jti }) => {
   return `${userBaseRevokeTokenKeyFormat({ userId })}::${jti}`;
 };
-  

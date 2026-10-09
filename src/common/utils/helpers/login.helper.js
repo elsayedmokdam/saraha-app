@@ -1,9 +1,15 @@
-import { TWO_FA_EXPIRESIN } from "../../../config.js";
+import {
+  LOGIN_ATTEMPT_BLOCK_TIME,
+  MAX_LOGIN_ATTEMPTS_TRIALS,
+  TWO_FA_EXPIRESIN,
+} from "../../../config.js";
 import { UserModel } from "../../../DB/models/index.js";
 import { EmailSubjectEnum, ProviderEnum } from "../../enum/index.js";
 import { NotFoundException } from "../../exceptions/index.js";
 import { findOne } from "../../repository/index.js";
 import { compare, createLoginCredentials } from "../../security/index.js";
+import { del, expire, get, set, ttl } from "../../services/index.js";
+import { maxLoginAttempsKeyFormat } from "../loginAttempsKey.js";
 import { createOTP } from "../otp/create.otp.js";
 import { sendEmailOTP } from "../otp/send.otp.js";
 
@@ -16,9 +22,28 @@ export const loginHelper = async ({ email, password }, issuer, FA = false) => {
       // confirmEmail: { $exists: true },
     },
   });
+  const loginAttemps = await get({ key: maxLoginAttempsKeyFormat({ email }) });
 
-  // Login with Gmail and try to Login with System
-  if (!user) throw NotFoundException({ message: "Invalid Login Credentials" });
+  if ((await ttl({ key: maxLoginAttempsKeyFormat({ email }) })) > 0) {
+    throw NotFoundException({
+      message: `Invalid Login Credentials, Please try again after ${LOGIN_ATTEMPT_BLOCK_TIME / 60 > 1 ? LOGIN_ATTEMPT_BLOCK_TIME / 60 : LOGIN_ATTEMPT_BLOCK_TIME} ${LOGIN_ATTEMPT_BLOCK_TIME / 60 > 1 ? "minutes" : "seconds"}`,
+    });
+  }
+
+  if (!user) {
+    // Login with Gmail and try to Login with System
+    await set({
+      key: maxLoginAttempsKeyFormat({ email }),
+      value: 1 + loginAttemps,
+    });
+    if (loginAttemps >= MAX_LOGIN_ATTEMPTS_TRIALS) {
+      await expire({
+        key: maxLoginAttempsKeyFormat({ email }),
+        ttl: LOGIN_ATTEMPT_BLOCK_TIME,
+      });
+    }
+    throw NotFoundException({ message: "Invalid Login Credentials" });
+  }
 
   // Login with System But Email Not Confirmed
   if (!user.confirmEmail)
@@ -28,7 +53,20 @@ export const loginHelper = async ({ email, password }, issuer, FA = false) => {
 
   // Check Password
   const match = await compare(password, user.password);
-  if (!match) throw NotFoundException({ message: "Invalid Login Credentials" });
+  if (!match) {
+    await set({
+      key: maxLoginAttempsKeyFormat({ email }),
+      value: 1 + loginAttemps,
+    });
+    if (loginAttemps >= MAX_LOGIN_ATTEMPTS_TRIALS) {
+      console.log("Blocked");
+      await expire({
+        key: maxLoginAttempsKeyFormat({ email }),
+        ttl: LOGIN_ATTEMPT_BLOCK_TIME,
+      });
+    }
+    throw NotFoundException({ message: "Invalid Login Credentials" });
+  }
 
   switch (FA) {
     case true:
@@ -39,8 +77,10 @@ export const loginHelper = async ({ email, password }, issuer, FA = false) => {
         otp: OTP,
         expiresIn: TWO_FA_EXPIRESIN,
       });
+      await del({ key: maxLoginAttempsKeyFormat({ email }) });
       break;
     default:
+      await del({ key: maxLoginAttempsKeyFormat({ email }) });
       return await createLoginCredentials({
         payload: {
           sub: user._id,

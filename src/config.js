@@ -34,3 +34,7 @@ export const OTP_EXPIRES_IN = parseInt(process.env.OTP_EXPIRES_IN ?? "120");
 export const OTP_MAX_TRIALS = parseInt(process.env.OTP_MAX_TRIALS ?? "3");
 export const OTP_BLOCK_TIME = parseInt(process.env.OTP_BLOCK_TIME ?? "300");
 export const TWO_FA_EXPIRESIN = parseInt(process.env.TWO_FA_EXPIRESIN ?? "120");
+
+// Login Attemps
+export const MAX_LOGIN_ATTEMPTS_TRIALS = parseInt(process.env.MAX_LOGIN_ATTEMPTS_TRIALS ?? "3");
+export const LOGIN_ATTEMPT_BLOCK_TIME = parseInt(process.env.LOGIN_ATTEMPT_BLOCK_TIME ?? "300");
