@@ -198,7 +198,6 @@ export const createRevokeToken = async ({ payload }) => {
   const consumedTime = Date.now() / 1000 - payload.iat;
   const refreshExpiresIn = payload.iat + REFRESH_TOKEN_EXPIRES_IN;
   const ttl = refreshExpiresIn - consumedTime;
-  // console.log("expiresIn", consumedTime + ttl);
   await set({
     key: userRevokeTokenKeyFormat({
       userId: payload.sub,
@@ -213,7 +212,7 @@ export const createRevokeToken = async ({ payload }) => {
 export const basicAuth = async ({ email, password }) => {
   const user = await findOne({
     model: UserModel,
-    query: { email },
+    filter: { email },
   });
 
   const match = await compare(password, user.password);

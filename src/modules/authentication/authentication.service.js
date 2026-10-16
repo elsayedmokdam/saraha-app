@@ -46,11 +46,10 @@ async function verifyGoogleIDToken(idToken) {
 
 // Signup with Gmail
 export const signupWithGmail = async ({ idToken }, issuer) => {
-  // console.log({ idToken });
   const { name, email, picture } = await verifyGoogleIDToken(idToken);
   const existAccount = await findOne({
     model: UserModel,
-    query: { email },
+    filter: { email },
   });
 
   if (existAccount) {
@@ -104,7 +103,7 @@ export const signupWithGmail = async ({ idToken }, issuer) => {
 export const signup = async (inputs) => {
   const checkDuplicate = await findOne({
     model: UserModel,
-    query: { email: inputs.email },
+    filter: { email: inputs.email },
   });
   if (checkDuplicate)
     throw ConflictException({ message: "Email Already Exists" });
@@ -142,7 +141,7 @@ export const twoFALogin = async ({ email, password }, issuer) => {
 export const verify2FALogin = async ({ email, otp }, issuer) => {
   const user = await findOne({
     model: UserModel,
-    query: {
+    filter: {
       email,
       provider: ProviderEnum.SYSTEM,
     },
@@ -172,7 +171,7 @@ export const verify2FALogin = async ({ email, otp }, issuer) => {
 export const confirmEmail = async ({ email, otp }) => {
   const user = await findOne({
     model: UserModel,
-    query: {
+    filter: {
       email,
       provider: ProviderEnum.SYSTEM,
       // confirmEmail: { $exists: false },
@@ -213,7 +212,7 @@ export const confirmEmail = async ({ email, otp }) => {
 export const resendConfirmEmailOTP = async ({ email }) => {
   const user = await findOne({
     model: UserModel,
-    query: {
+    filter: {
       email,
       provider: ProviderEnum.SYSTEM,
       // confirmEmail: { $exists: false },
@@ -237,7 +236,7 @@ export const resendConfirmEmailOTP = async ({ email }) => {
 export const forgotPassword = async ({ email }) => {
   const user = await findOne({
     model: UserModel,
-    query: {
+    filter: {
       email,
       provider: ProviderEnum.SYSTEM,
       // confirmEmail: { $exists: true },
@@ -261,7 +260,7 @@ export const forgotPassword = async ({ email }) => {
 export const verifyResetPasswordOTP = async ({ email, otp }) => {
   const user = await findOne({
     model: UserModel,
-    query: {
+    filter: {
       email,
       provider: ProviderEnum.SYSTEM,
       // confirmEmail: { $exists: true },

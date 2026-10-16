@@ -1,7 +1,6 @@
 import { ACCESS_TOKEN_EXPIRES_IN } from "../../config.js";
 import {
   ConflictException,
-  UnauthorizedException,
 } from "../../common/exceptions/index.js";
 import {
   find,
@@ -12,7 +11,6 @@ import {
   createLoginCredentials,
   createRevokeToken,
 } from "../../common/security/index.js";
-
 import { UserModel } from "../../DB/models/index.js";
 
 export const profile = async ({ userId }) => {
@@ -35,7 +33,7 @@ export const uploadProfileImage = async ({ user, file }) => {
 export const allUsers = async (user) => {
   const users = await find({
     model: UserModel,
-    query: {
+    filter: {
       _id: { $ne: user._id },
     },
   });

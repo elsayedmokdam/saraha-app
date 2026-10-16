@@ -38,3 +38,6 @@ export const TWO_FA_EXPIRESIN = parseInt(process.env.TWO_FA_EXPIRESIN ?? "120");
 // Login Attemps
 export const MAX_LOGIN_ATTEMPTS_TRIALS = parseInt(process.env.MAX_LOGIN_ATTEMPTS_TRIALS ?? "3");
 export const LOGIN_ATTEMPT_BLOCK_TIME = parseInt(process.env.LOGIN_ATTEMPT_BLOCK_TIME ?? "300");
+
+// Cors Options
+export const CORS_ORIGINS = process.env.CORS_ORIGINS.split(",") ?? "http://localhost:3000";

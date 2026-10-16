@@ -26,7 +26,6 @@ export const update = async ({ key, value, ttl = undefined } = {}) => {
 };
 
 export const del = async ({ key }) => {
-  console.log({key})
   return key.length && (await client.del(key));
 };
 

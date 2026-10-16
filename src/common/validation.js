@@ -1,5 +1,7 @@
 import { z } from "zod";
 import { LanguageEnum } from "./enum/index.js";
+import mongoose from "mongoose";
+import { fileValidations } from "./utils/index.js";
 
 const matchFields = ({ data, field, match, ctx, lang }) => {
   if (data[field] !== data[match]) {
@@ -14,6 +16,8 @@ const matchFields = ({ data, field, match, ctx, lang }) => {
   }
 };
 
+const allowedExtentionsFiles = Object.values(fileValidations).flat();
+
 export const generalValidationFields = {
   username: (lang) =>
     z
@@ -24,7 +28,12 @@ export const generalValidationFields = {
             ? "اسم المستخدم يجب ان يكون على الاقل 3 حروف"
             : "Username must be at least 3 characters.",
       })
-      .max(20),
+      .max(20, {
+        message:
+          lang == LanguageEnum.AR
+            ? "اسم المستخدم يجب ان لا يتجاوز 20 حرف"
+            : "Username must not exceed 20 characters.",
+      }),
 
   email: (lang) =>
     z.email({
@@ -75,5 +84,58 @@ export const generalValidationFields = {
           : "Only valid OTP is allowed.",
     }),
 
+  mongooId: (lang) =>
+    z.string(lang == LanguageEnum.AR ? "id مطلوب" : "id is required").refine(
+      (data) => {
+        return mongoose.Types.ObjectId.isValid(data);
+      },
+      {
+        message: lang == LanguageEnum.AR ? "id غير صالح" : "Invalid id format",
+      },
+    ),
+
+  file: (lang) =>
+    z.strictObject({
+      fieldname: z.string(),
+      originalname: z.string(),
+      encoding: z.string(),
+      mimetype: z.enum(allowedExtentionsFiles, {
+        message: lang === LanguageEnum.AR ? "ملف غير صالح" : "Invalid file",
+      }),
+      buffer: z.instanceof(Buffer),
+      size: z.number(),
+      path: z.string(),
+    }),
+
+  header: (lang) =>
+    z.object({
+      "accept-language": z
+        .union([z.literal("0"), z.literal("1")], {
+          message:
+            lang === LanguageEnum.AR
+              ? "accept-language يجب ان يكون 0|1"
+              : "accept-language must be 0|1",
+        })
+        .default(0)
+        .optional(),
+    }),
+
+  content: (lang) =>
+    z
+      .string()
+      .min(3, {
+        message:
+          lang === LanguageEnum.AR
+            ? "المحتوى يجب أن يكون 3 أحرف على الأقل"
+            : "Content must be at least 3 characters",
+      })
+      .max(50000, {
+        message:
+          lang === LanguageEnum.AR
+            ? "المحتوى يجب ألا يتجاوز 50000 حرف"
+            : "Content must not exceed 50000 characters",
+      })
+      .optional(),
+      
   matchFields,
 };

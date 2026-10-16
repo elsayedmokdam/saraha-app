@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { LanguageEnum, LogoutEnum } from "../../common/enum/index.js";
-import { headerSchema } from "../common/header.schema.js";
+import { generalValidationFields } from "../../common/validation.js";
 
 export const logoutSchema = (lang) => {
   return z.object({
@@ -14,6 +14,6 @@ export const logoutSchema = (lang) => {
         })
         .default(LogoutEnum.ONE),
     }),
-    headers: headerSchema(),
+    headers: generalValidationFields.header(lang),
   });
 };

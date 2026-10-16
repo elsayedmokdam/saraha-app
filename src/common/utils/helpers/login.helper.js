@@ -16,7 +16,7 @@ import { sendEmailOTP } from "../otp/send.otp.js";
 export const loginHelper = async ({ email, password }, issuer, FA = false) => {
   const user = await findOne({
     model: UserModel,
-    query: {
+    filter: {
       email,
       provider: ProviderEnum.SYSTEM,
       // confirmEmail: { $exists: true },
@@ -24,7 +24,10 @@ export const loginHelper = async ({ email, password }, issuer, FA = false) => {
   });
   const loginAttemps = await get({ key: maxLoginAttempsKeyFormat({ email }) });
 
-  if ((await ttl({ key: maxLoginAttempsKeyFormat({ email }) })) > 0) {
+  if (
+    (await ttl({ key: maxLoginAttempsKeyFormat({ email }) })) > 0 &&
+    loginAttemps >= MAX_LOGIN_ATTEMPTS_TRIALS
+  ) {
     throw NotFoundException({
       message: `Invalid Login Credentials, Please try again after ${LOGIN_ATTEMPT_BLOCK_TIME / 60 > 1 ? LOGIN_ATTEMPT_BLOCK_TIME / 60 : LOGIN_ATTEMPT_BLOCK_TIME} ${LOGIN_ATTEMPT_BLOCK_TIME / 60 > 1 ? "minutes" : "seconds"}`,
     });
@@ -59,7 +62,6 @@ export const loginHelper = async ({ email, password }, issuer, FA = false) => {
       value: 1 + loginAttemps,
     });
     if (loginAttemps >= MAX_LOGIN_ATTEMPTS_TRIALS) {
-      console.log("Blocked");
       await expire({
         key: maxLoginAttempsKeyFormat({ email }),
         ttl: LOGIN_ATTEMPT_BLOCK_TIME,

@@ -5,16 +5,16 @@ export const create = async ({ model, data = [], options = {} } = {}) => {
 
 export const find = async ({
   model,
-  query = {},
+  filter = {},
   select = "",
   options = {},
 } = {}) => {
-  let { page = 1, limit = 5, sort, populate, lean = false } = options;
+  let { page = 1, limit = 10, sort, populate, lean = false } = options;
   page = Math.ceil(page < 1 ? 1 : page);
   limit = Math.ceil(limit < 1 ? 1 : limit);
   const skip = (page - 1) * limit;
 
-  let doc = model.find(query).select(select).skip(skip).limit(limit);
+  let doc = model.find(filter).select(select).skip(skip).limit(limit);
 
   if (sort) {
     doc = doc.sort(sort);
@@ -26,7 +26,7 @@ export const find = async ({
     doc = doc.lean();
   }
 
-  const [data, total] = await Promise.all([doc, model.countDocuments(query)]);
+  const [data, total] = await Promise.all([doc, model.countDocuments(filter)]);
 
   return {
     count: data.length,
@@ -42,12 +42,12 @@ export const find = async ({
 
 export const findOne = async ({
   model,
-  query = {},
+  filter = {},
   select = "",
   options = {},
 } = {}) => {
   const { lean = false } = options;
-  let doc = model.findOne(query).select(select);
+  let doc = model.findOne(filter).select(select);
 
   if (lean) {
     doc = doc.lean();
@@ -68,12 +68,12 @@ export const findById = async ({
 
 export const findOneAndUpdate = async ({
   model,
-  query = {},
+  filter = {},
   update = {},
   options = {},
 } = {}) => {
   const result = await model.findOneAndUpdate(
-    query,
+    filter,
     {
       ...update,
       $inc: {
@@ -85,6 +85,7 @@ export const findOneAndUpdate = async ({
       projection: "-password",
       runValidators: true,
       returnDocument: "after",
+      lean: true,
     },
   );
   return result;
@@ -92,12 +93,12 @@ export const findOneAndUpdate = async ({
 
 export const findOneAndReplace = async ({
   model,
-  query = {},
+  filter = {},
   update = {},
   options = {},
 } = {}) => {
   const result = await model.findOneAndReplace(
-    query,
+    filter,
     {
       ...update,
     },
@@ -132,12 +133,12 @@ export const findByIdAndUpdate = async ({
 
 export const updateMany = async ({
   model,
-  query = {},
+  filter = {},
   update = {},
   options = {},
 } = {}) => {
   const result = await model.updateMany(
-    query,
+    filter,
     {
       ...update,
       $inc: {
@@ -156,10 +157,10 @@ export const updateMany = async ({
 
 export const findOneAndDelete = async ({
   model,
-  query = {},
+  filter = {},
   options = {},
 } = {}) => {
-  const result = await model.findOneAndDelete(query, options);
+  const result = await model.findOneAndDelete(filter, options);
   return result;
 };
 
@@ -168,22 +169,42 @@ export const findByIdAndDelete = async ({ model, id, options = {} } = {}) => {
   return result;
 };
 
-export const deleteMany = async ({ model, query = {}, options = {} } = {}) => {
-  const result = await model.deleteMany(query, options);
+export const deleteOne = async ({ model, filter = {}, options = {} } = {}) => {
+  const result = await model.deleteOne(filter, options);
+  return result;
+};
+
+export const deleteMany = async ({ model, filter = {}, options = {} } = {}) => {
+  const result = await model.deleteMany(filter, options);
   return result;
 };
 
 export const aggregate = async ({
   model,
   pipeline = [],
-  skip = 0,
+  page = 1,
   limit = 5,
   project = {},
 } = {}) => {
+  page = Math.ceil(page < 1 ? 1 : page);
+  limit = Math.ceil(limit < 1 ? 1 : limit);
+  const skip = (page - 1) * limit;
+
   const result = await model
     .aggregate(pipeline)
     .skip(skip)
     .limit(limit)
     .project(project);
-  return result;
+
+  const total = await model.countDocuments();
+  return {
+    count: result.length,
+    data: result,
+    meta: {
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit),
+    },
+  };
 };

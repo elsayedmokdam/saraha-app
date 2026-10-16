@@ -6,10 +6,14 @@ export const validationMiddleware = (schema) => {
     const lang = req.headers["accept-language"]
       ? Number(req.headers["accept-language"])
       : LanguageEnum.EN;
-      
+
+
     const validationResult = schema(lang).safeParse({
       body: req.body,
       headers: req.headers,
+      files: req.files,
+      query: req.query,
+      params: req.params,
     });
 
     if (!validationResult.success) {

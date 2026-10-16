@@ -9,6 +9,7 @@ export const resetPasswordSchema = (lang) => {
         newPassword: generalValidationFields.password(lang),
         confirmPassword: generalValidationFields.password(lang),
       }),
+      headers: generalValidationFields.header(lang),
     })
     .superRefine((data, ctx) => {
       generalValidationFields.matchFields({

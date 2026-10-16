@@ -2,19 +2,31 @@ import mongoose from "mongoose";
 
 const MessageSchema = new mongoose.Schema(
   {
-    sender: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "users",
-      required: true,
-    },
-    receiver: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "users",
-      required: true,
-    },
-    message: {
+    content: {
       type: String,
+      required: function () {
+        return this.attachment?.length === 0;
+      },
+      minLength: [3, "Content must be at least 3 characters."],
+      maxLength: [50000, "Content must be at most 50000 characters."],
+    },
+
+    attachment: [String],
+
+    senderId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "users",
+    },
+
+    receiverId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "users",
       required: true,
+    },
+
+    isAnonymous: {
+      type: Boolean,
+      default: true,
     },
   },
   {

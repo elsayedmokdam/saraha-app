@@ -1,0 +1,49 @@
+import { z } from "zod";
+import { generalValidationFields } from "../../common/validation.js";
+import { LanguageEnum } from "../../common/enum/index.js";
+
+export const createConversationMessageSchema = (lang) => {
+  return z
+    .object({
+      params: z.strictObject({
+        conversationId: generalValidationFields.mongooId(lang),
+      }),
+      body: z.strictObject(
+        {
+          content: generalValidationFields.content(lang),
+        },
+        {
+          error: (err) => {
+            return err.input === undefined
+              ? lang === LanguageEnum.AR
+                ? (err.message = "محتوى الرسالة مطلوب")
+                : (err.message = "Message content is required")
+              : undefined;
+          },
+        },
+      ),
+      files: z
+        .array(generalValidationFields.file(lang))
+        .max(5, {
+          message:
+            lang === LanguageEnum.AR
+              ? "الحد الأقصى 5 ملفات"
+              : "Maximum 5 files allowed",
+        })
+        .optional(),
+
+      headers: generalValidationFields.header(lang),
+    })
+    .superRefine((data, ctx) => {
+      if (!data.body.content && !data.files?.length) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["body", "content"],
+          message:
+            lang === LanguageEnum.AR
+              ? "محتوى الرسالة أو ملف واحد على الأقل مطلوب"
+              : "Message content or at least one file is required",
+        });
+      }
+    });
+};

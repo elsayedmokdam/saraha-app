@@ -23,8 +23,10 @@ export default router;
 
 // Get Profile
 router.get("/profile", authentication(), async (req, res) => {
+  // Use this Instead of passing req.user as after upload image it will be old image and want ro be updated from DB.
   const data = await profile({ userId: req.user._id });
   return successResponse({ res, data });
+  // return successResponse({ res, data: req.user });
 });
 
 // Upload Profile Image
@@ -33,8 +35,9 @@ router.patch(
   authentication(),
   uploadMiddleware({
     multerMiddleware: localFileUpload({
-      validation: fileValidations,
-    }).single("attachment"),
+      maxFileSize: 10,
+    })
+    .single("attachment"),
     // .fields([
     //   { name: "image", maxCount: 1 },
     //   { name: "cover", maxCount: 1 },
@@ -45,8 +48,9 @@ router.patch(
   }),
   async (req, res) => {
     // ------------ Array ------------ //
-    // const files = req.files.map((file) => file.path);
-    // console.log({ files });
+    // const files = req.files.map((file) => file.value.path);
+    // console.log({ files  });
+    // return successResponse({ res, data: files });
     // ------------ Fields ------------ //
     // const files = Object.entries(req.files).map(([key, file]) => file[0].path);
     // console.log({ files });

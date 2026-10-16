@@ -99,7 +99,7 @@ router.patch(
     return successResponse({
       res,
       data,
-      message: "Email Confirmed, Please You can Login",
+      message: "Email Confirmed Successfully, Login to Continue",
     });
   },
 );
@@ -129,7 +129,6 @@ router.patch(
   "/reset-password",
   validation(resetPasswordSchema),
   async (req, res) => {
-    console.log(req.validated.body);
     const { user, message } = await resetPassword(req.validated.body);
     return successResponse({ res, data: user, message });
   },
