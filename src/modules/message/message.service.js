@@ -140,6 +140,29 @@ export const respondToIdentityRequest = async ({ requestId, status }, user) => {
 
   // Create Conversation
   if (updatedRequest.status === IdentityRequestStatusEnum.ACCEPTED) {
+    const existingConversation = await findOne({
+      model: ConversationModel,
+      filter: {
+        $and: [{ senderId: request.senderId }, { receiverId: user._id }],
+      },
+    });
+
+    // Update The Message To Not Be Anonymous
+    await findOneAndUpdate({
+      model: MessageModel,
+      filter: { _id: updatedRequest.messageId },
+      update: { isAnonymous: false },
+    });
+
+    // Check If Conversation Already Exists
+    if (existingConversation) {
+      return {
+        request: updatedRequest,
+        conversation: existingConversation,
+      };
+    }
+
+    // Create Conversation If Not Exists
     const conversation = await create({
       model: ConversationModel,
       data: [
@@ -150,13 +173,6 @@ export const respondToIdentityRequest = async ({ requestId, status }, user) => {
           receiverId: updatedRequest.receiverId,
         },
       ],
-    });
-
-    // Update The Message To Not Be Anonymous
-    await findOneAndUpdate({
-      model: MessageModel,
-      filter: { _id: updatedRequest.messageId },
-      update: { isAnonymous: false },
     });
 
     return {
