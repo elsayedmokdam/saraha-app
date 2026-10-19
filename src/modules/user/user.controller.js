@@ -3,6 +3,8 @@ import {
   allUsers,
   profile,
   rotateToken,
+  updatePassword,
+  updateUserData,
   uploadProfileImage,
 } from "./user.service.js";
 import {
@@ -17,6 +19,7 @@ import {
   validationMiddleware as validation,
 } from "../../middleware/index.js";
 import { RoleEnum, TokenTypeEnum } from "../../common/enum/index.js";
+import { updatePasswordSchema, updateUserDataSchema } from "../../schema/index.js";
 const router = Router();
 
 export default router;
@@ -36,8 +39,7 @@ router.patch(
   uploadMiddleware({
     multerMiddleware: localFileUpload({
       maxFileSize: 10,
-    })
-    .single("attachment"),
+    }).single("attachment"),
     // .fields([
     //   { name: "image", maxCount: 1 },
     //   { name: "cover", maxCount: 1 },
@@ -60,7 +62,30 @@ router.patch(
   },
 );
 
-// Get All Users
+// Update User Password
+router.patch(
+  "/update-password",
+  authentication(),
+  validation(updatePasswordSchema),
+  async (req, res) => {
+    console.log(req.validated.body);
+    const data = await updatePassword({ ...req.validated.body }, req.user);
+    return successResponse({ res, data });
+  },
+);
+
+// Update User Data
+router.put(
+  "/update-data",
+  authentication(),
+  validation(updateUserDataSchema),
+  async (req, res) => {
+    const data = await updateUserData(req.validated.body, req.user);
+    return successResponse({ res, data, message: "User Updated Successfully" });
+  },
+);
+
+// Get All Users (Admin)
 router.get(
   "/all",
   authentication(),

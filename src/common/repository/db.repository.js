@@ -120,7 +120,10 @@ export const findByIdAndUpdate = async ({
 } = {}) => {
   const result = await model.findByIdAndUpdate(
     id,
-    { ...update, $inc: { __v: 1 } },
+    {
+      $set: update,
+      $inc: { __v: 1 },
+    },
     {
       ...options,
       projection: "-password",

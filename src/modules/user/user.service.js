@@ -1,15 +1,16 @@
 import { ACCESS_TOKEN_EXPIRES_IN } from "../../config.js";
-import {
-  ConflictException,
-} from "../../common/exceptions/index.js";
+import { ConflictException } from "../../common/exceptions/index.js";
 import {
   find,
   findById,
   findByIdAndUpdate,
+  findOne,
 } from "../../common/repository/index.js";
 import {
+  compare,
   createLoginCredentials,
   createRevokeToken,
+  hash,
 } from "../../common/security/index.js";
 import { UserModel } from "../../DB/models/index.js";
 
@@ -28,6 +29,46 @@ export const uploadProfileImage = async ({ user, file }) => {
     update: { image: file.path },
   });
   return updatedUser;
+};
+
+export const updatePassword = async (
+  { currentPassword, newPassword, confirmPassword },
+  user,
+) => {
+  const userFound = await findById({
+    model: UserModel,
+    id: user._id,
+    select: "password",
+  });
+
+  if (!(await compare(currentPassword, userFound.password)))
+    throw ConflictException({ message: "Invalid Password" });
+
+  const updated = await findByIdAndUpdate({
+    model: UserModel,
+    id: user._id,
+    update: {
+      password: await hash(newPassword),
+      confirmPassword: await hash(confirmPassword),
+    },
+  });
+  return updated;
+};
+
+export const updateUserData = async (inputs, user) => {
+  const { username, ...rest } = inputs;
+  const update = { ...rest };
+
+  const [firstName, lastName] = username.trim().split(" ") || [];
+  update.firstName = firstName;
+  update.lastName = lastName;
+
+  const updated = await findByIdAndUpdate({
+    model: UserModel,
+    id: user._id,
+    update,
+  });
+  return updated;
 };
 
 export const allUsers = async (user) => {
