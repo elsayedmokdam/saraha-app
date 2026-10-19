@@ -143,7 +143,16 @@ export const respondToIdentityRequest = async ({ requestId, status }, user) => {
     const existingConversation = await findOne({
       model: ConversationModel,
       filter: {
-        $and: [{ senderId: request.senderId }, { receiverId: user._id }],
+        $or: [
+          {
+            senderId: updatedRequest.senderId,
+            receiverId: updatedRequest.receiverId,
+          },
+          {
+            senderId: updatedRequest.receiverId,
+            receiverId: updatedRequest.senderId,
+          },
+        ],
       },
     });
 

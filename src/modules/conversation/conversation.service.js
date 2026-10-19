@@ -59,3 +59,11 @@ export const getAllConversationMessages = async ({
   });
   return conversationMessages;
 };
+
+export const getUserConversations = async (user) => {
+  const conversations = await find({
+    model: ConversationModel,
+    filter: { $or: [{ senderId: user._id }, { receiverId: user._id }] },
+  });
+  return conversations;
+}

@@ -35,7 +35,7 @@ app.use(
   morgan("combined"),
   helmet(),
   cors(),
-  generateRateLimiter(),
+  // generateRateLimiter(),
   express.json(),
 );
 app.use("/assets", express.static("./assets"));

@@ -13,6 +13,7 @@ import {
 import {
   createConversationMessage,
   getAllConversationMessages,
+  getUserConversations,
 } from "./conversation.service.js";
 const router = Router();
 
@@ -45,6 +46,12 @@ router.get("/:conversationId/messages", authentication(), async (req, res) => {
     ...req.params,
     ...req.query,
   });
+  return successResponse({ res, data });
+});
+
+// Get User Conversations
+router.get("/user", authentication(), async (req, res) => {
+  const data = await getUserConversations(req.user);
   return successResponse({ res, data });
 });
 
