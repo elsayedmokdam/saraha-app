@@ -19,6 +19,7 @@ import { UserModel } from "../../DB/models/index.js";
 import { RoleEnum, TokenTypeEnum } from "../enum/index.js";
 import { exists, get, set } from "../services/index.js";
 import {
+  userBaseRevokeTokenKeyFormat,
   userCacheProfileKeyFormat,
   userRevokeTokenKeyFormat,
 } from "../utils/index.js";
@@ -90,9 +91,8 @@ export const decodeToken = async ({
   // Check if the token is revoked
   if (
     await exists({
-      key: userRevokeTokenKeyFormat({
+      key: userBaseRevokeTokenKeyFormat({
         userId: payload.sub,
-        jti: payload.jti,
       }),
     })
   ) {
@@ -100,21 +100,37 @@ export const decodeToken = async ({
       message: "Session Expired, Please Login Again",
     });
   }
-  
+
   // Check if the user is cached
+  const cachedUser = await get({
+    key: userCacheProfileKeyFormat({ userId: payload.sub }),
+  });
+
+  const isTokenIssuedBeforeCredentialsChange = (
+    changeCredentialsTime,
+    issuedAt,
+  ) => {
+    const changedAt = changeCredentialsTime
+      ? new Date(changeCredentialsTime).getTime()
+      : 0;
+
+    return changedAt > issuedAt * 1000;
+  };
+
+  //  Check If Cached User Logged Out From All Devices
   if (
-    await exists({
-      key: userCacheProfileKeyFormat({
-        userId: payload.sub,
-      }),
-    })
+    isTokenIssuedBeforeCredentialsChange(
+      cachedUser?.changeCredentialsTime,
+      payload.iat,
+    )
   ) {
-    const cachedUser = await get({
-      key: userCacheProfileKeyFormat({ userId: payload.sub }),
+    throw UnauthorizedException({
+      message: "Session Expired, Please Login Again",
     });
-    if (cachedUser) {
-      return { payload, user: cachedUser };
-    }
+  }
+
+  if (cachedUser) {
+    return { payload, user: cachedUser };
   }
 
   // If not cached, then Get User From DB
@@ -124,7 +140,19 @@ export const decodeToken = async ({
       message: "Session Expired, Please Login Again",
     });
   }
+  // Logout from all devices, then the user.changeCredentialsTime will be updated to the current time, and the payload.iat will be less than the user.changeCredentialsTime, so the token will be invalid
 
+  if (
+    isTokenIssuedBeforeCredentialsChange(
+      user?.changeCredentialsTime,
+      payload.iat,
+    )
+  ) {
+    throw UnauthorizedException({
+      message: "Session Expired, Please Login Again",
+    });
+  }
+  
   // Cache the user
   await set({
     key: userCacheProfileKeyFormat({ userId: payload.sub }),
@@ -132,12 +160,7 @@ export const decodeToken = async ({
     ttl: ACCESS_TOKEN_EXPIRES_IN,
   });
 
-  // Logout from all devices, then the user.changeCredentialsTime will be updated to the current time, and the payload.iat will be less than the user.changeCredentialsTime, so the token will be invalid
-  if ((user.changeCredentialsTime?.getTime() ?? 0) > payload.iat * 1000) {
-    throw UnauthorizedException({
-      message: "Session Expired, Please Login Again",
-    });
-  }
+
 
   return { payload, user };
 };

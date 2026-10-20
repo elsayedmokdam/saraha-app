@@ -10,6 +10,7 @@ import {
   compare,
   createLoginCredentials,
   createRevokeToken,
+  encryption,
   hash,
 } from "../../common/security/index.js";
 import { UserModel } from "../../DB/models/index.js";
@@ -56,12 +57,13 @@ export const updatePassword = async (
 };
 
 export const updateUserData = async (inputs, user) => {
-  const { username, ...rest } = inputs;
+  const { username, phone, ...rest } = inputs;
   const update = { ...rest };
 
   const [firstName, lastName] = username.trim().split(" ") || [];
   update.firstName = firstName;
   update.lastName = lastName;
+  update.phone = await encryption(phone);
 
   const updated = await findByIdAndUpdate({
     model: UserModel,
@@ -83,10 +85,12 @@ export const allUsers = async (user) => {
 
 export const rotateToken = async (payload, user, issuer) => {
   const accessExpiresIn = (payload.iat + ACCESS_TOKEN_EXPIRES_IN) * 1000; // Expires in in milliseconds
-  const currentTime = Date.now() + 10 * 60 * 1000; // Current time in milliseconds + 10 minutes
+  const remainingTime = accessExpiresIn - Date.now(); // Remaining time in milliseconds
+
+  const tenMinutes = 10 * 60 * 1000; // 10 minutes in milliseconds
 
   // Meaning the access token is still valid
-  if (accessExpiresIn > currentTime) {
+  if (remainingTime > tenMinutes) {
     throw ConflictException({ message: "Access token is still valid" });
   }
   const { access_token, refresh_token } = await createLoginCredentials({

@@ -51,7 +51,7 @@ router.get("/:conversationId/messages", authentication(), async (req, res) => {
 
 // Get User Conversations
 router.get("/user", authentication(), async (req, res) => {
-  const data = await getUserConversations(req.user);
+  const data = await getUserConversations({ ...req.query }, req.user);
   return successResponse({ res, data });
 });
 
