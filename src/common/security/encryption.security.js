@@ -14,7 +14,7 @@ export const encryption = async (plainText) => {
 
 export const decryption = async (cipherText) => {
   // Destruc the iv and encrypted data
-  const [iv, encryptedData] = cipherText.split("::");
+  const [iv, encryptedData] = cipherText?.split("::");
   // Convert iv to buffer
   const convertedIv = Buffer.from(iv, "hex");
   // Use the same algorithm that was used for encryption to decrypt

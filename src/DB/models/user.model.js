@@ -43,6 +43,8 @@ const userSchema = new mongoose.Schema(
 
     confirmEmail: Date,
 
+    isCreated: Boolean,
+
     DOB: Date,
 
     phone: String,

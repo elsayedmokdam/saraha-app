@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { IdentityRequestStatusEnum } from "../../common/enum/index.js";
 
 const MessageSchema = new mongoose.Schema(
   {
@@ -27,6 +28,11 @@ const MessageSchema = new mongoose.Schema(
     isAnonymous: {
       type: Boolean,
       default: true,
+    },
+
+    requestStatus: {
+      type: String,
+      default: IdentityRequestStatusEnum.NOTASKED,
     },
   },
   {

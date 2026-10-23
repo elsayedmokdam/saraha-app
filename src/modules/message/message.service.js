@@ -15,7 +15,6 @@ import {
   findOneAndUpdate,
   aggregate,
 } from "../../common/repository/index.js";
-import { decryption } from "../../common/security/encryption.security.js";
 import { toObjectId } from "../../common/utils/index.js";
 import {
   ConversationModel,
@@ -140,6 +139,13 @@ export const respondToIdentityRequest = async ({ requestId, status }, user) => {
 
   // Create Conversation
   if (updatedRequest.status === IdentityRequestStatusEnum.ACCEPTED) {
+    // Update The Message To Not Be Anonymous And Identity Request Status
+    await findOneAndUpdate({
+      model: MessageModel,
+      filter: { _id: updatedRequest.messageId },
+      update: { isAnonymous: false, requestStatus: updatedRequest.status },
+    });
+
     const existingConversation = await findOne({
       model: ConversationModel,
       filter: {
@@ -154,13 +160,6 @@ export const respondToIdentityRequest = async ({ requestId, status }, user) => {
           },
         ],
       },
-    });
-
-    // Update The Message To Not Be Anonymous
-    await findOneAndUpdate({
-      model: MessageModel,
-      filter: { _id: updatedRequest.messageId },
-      update: { isAnonymous: false },
     });
 
     // Check If Conversation Already Exists
@@ -186,8 +185,15 @@ export const respondToIdentityRequest = async ({ requestId, status }, user) => {
 
     return {
       request: updatedRequest,
-      conversation,
+      conversation: conversation[0],
     };
+  } else if (updatedRequest.status === IdentityRequestStatusEnum.REJECTED) {
+    // Update The Message To Be Anonymous And Identity Request Status
+    await findOneAndUpdate({
+      model: MessageModel,
+      filter: { _id: updatedRequest.messageId },
+      update: { requestStatus: updatedRequest.status },
+    });
   }
 
   return {
@@ -233,30 +239,12 @@ export const getIdentityRequests = async ({ page = 1, limit = 10 }, user) => {
       "message.senderId": 0,
       "message.receiverId": 0,
       "receiver.password": 0,
+      "receiver.phone": 0,
       "receiver.confirmPassword": 0,
       "receiver.confirmEmail": 0,
       "receiver.role": 0,
     },
   });
-
-  // Hanlde Decryption of The Phone
-  const handled = await Promise.all(
-    requests.data.map(async (request) => {
-      const phone = await decryption(request.receiver[0].phone);
-      return {
-        ...request,
-        receiver: {
-          ...request.receiver[0],
-          phone,
-        },
-      };
-    }),
-  );
-
-  requests = {
-    ...requests,
-    data: handled,
-  };
 
   return requests;
 };

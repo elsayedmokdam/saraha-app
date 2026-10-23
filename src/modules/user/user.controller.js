@@ -1,9 +1,12 @@
 import { Router } from "express";
 import {
+  addUser,
   allUsers,
+  deleteUser,
   profile,
   rotateToken,
   updatePassword,
+  updateUser,
   updateUserData,
   uploadProfileImage,
 } from "./user.service.js";
@@ -19,7 +22,13 @@ import {
   validationMiddleware as validation,
 } from "../../middleware/index.js";
 import { RoleEnum, TokenTypeEnum } from "../../common/enum/index.js";
-import { updatePasswordSchema, updateUserDataSchema } from "../../schema/index.js";
+import {
+  addUserSchema,
+  deleteUserSchema,
+  updatePasswordSchema,
+  updateUserDataSchema,
+  updateUserSchema,
+} from "../../schema/index.js";
 const router = Router();
 
 export default router;
@@ -68,7 +77,6 @@ router.patch(
   authentication(),
   validation(updatePasswordSchema),
   async (req, res) => {
-    console.log(req.validated.body);
     const data = await updatePassword({ ...req.validated.body }, req.user);
     return successResponse({ res, data });
   },
@@ -85,16 +93,61 @@ router.put(
   },
 );
 
+//=========== Admin Actions ===========
+
 // Get All Users (Admin)
 router.get(
   "/all",
   authentication(),
   authorization(RoleEnum.ADMIN),
   async (req, res) => {
-    const data = await allUsers(req.user);
+    const data = await allUsers(req.user, req.query);
     return successResponse({ res, data });
   },
 );
+
+// Delete User
+router.delete(
+  "/:userId/delete-user",
+  authentication(),
+  authorization(RoleEnum.ADMIN),
+  validation(deleteUserSchema),
+  async (req, res) => {
+    const data = await deleteUser(req.validated.params, req.user);
+    return successResponse({
+      res,
+      data,
+      message: "User Deleted Successfully",
+    });
+  },
+);
+
+// Add User
+router.post(
+  "/add-user",
+  authentication(),
+  authorization(RoleEnum.ADMIN),
+  validation(addUserSchema),
+  async (req, res) => {
+    const data = await addUser(req.validated.body);
+    return successResponse({ res, data, message: "User Added Successfully" });
+  },
+);
+
+// Update User
+router.put(
+  "/:userId/update-user",
+  authentication(),
+  authorization(RoleEnum.ADMIN),
+  validation(updateUserSchema),
+  async (req, res) => {
+
+    const data = await updateUser(req.validated.body, req.validated.params);
+    return successResponse({ res, data, message: "User Updated Successfully" });
+  },
+);
+
+//=========== Admin Actions ===========
 
 // Rotate Token
 router.post(

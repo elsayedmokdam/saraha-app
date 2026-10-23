@@ -67,7 +67,7 @@ export const getAllConversationMessages = async ({
   return conversationMessages;
 };
 
-export const getUserConversations = async ({ page = 1, limit = 10, search = "" }, user) => {
+export const getUserConversations = async ({ page = 1, limit = 10 }, user) => {
   let conversations = await aggregate({
     model: ConversationModel,
     pipeline: [
@@ -120,8 +120,10 @@ export const getUserConversations = async ({ page = 1, limit = 10, search = "" }
   const handled = await Promise.all(
     conversations.data.map(async (conversation) => {
       const [senderPhone, receiverPhone] = await Promise.all([
-        decryption(conversation.sender[0].phone),
-        decryption(conversation.receiver[0].phone),
+        conversation.sender[0].phone &&
+          decryption(conversation.sender[0].phone),
+        conversation.receiver[0].phone &&
+          decryption(conversation.receiver[0].phone),
       ]);
       return {
         ...conversation,

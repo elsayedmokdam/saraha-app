@@ -1,3 +1,7 @@
+// For a Problem in Ip Address with Node.
+import dns from "node:dns";
+dns.setServers(["8.8.8.8", "1.1.1.1"]);
+
 import express from "express";
 import cors from "cors";
 import helmet from "helmet";
@@ -10,7 +14,6 @@ import {
   userController,
 } from "./modules/index.js";
 import { globalErrorHandler } from "./middleware/index.js";
-import { generateRateLimiter } from "./common/utils/index.js";
 import { conversationController } from "./modules/conversation/index.js";
 
 const app = express();
