@@ -72,7 +72,7 @@ export const signupWithGmail = async ({ idToken }, issuer) => {
   }
 
   // 3. Not Exist, then Signup with Gmail
-  const user = await create({
+  const [user] = await create({
     model: UserModel,
     data: [
       {
