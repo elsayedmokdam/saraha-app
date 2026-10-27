@@ -14,3 +14,5 @@ emailEvent.on("sendEmail", async ({ recipients, subject, data }) => {
     console.log(error);
   }
 });
+
+emailEvent.on("error", (error) => console.log(error));

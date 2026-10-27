@@ -15,6 +15,7 @@ import {
 } from "./modules/index.js";
 import { globalErrorHandler } from "./middleware/index.js";
 import { conversationController } from "./modules/conversation/index.js";
+import { generateRateLimiter } from "./common/utils/limiter.js";
 
 const app = express();
 
@@ -38,7 +39,7 @@ app.use(
   morgan("combined"),
   helmet(),
   cors(),
-  // generateRateLimiter(),
+  generateRateLimiter({ limit: 1000 }),
   express.json(),
 );
 app.use("/assets", express.static("./assets"));

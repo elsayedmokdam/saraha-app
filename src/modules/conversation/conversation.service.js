@@ -67,7 +67,10 @@ export const getAllConversationMessages = async ({
   return conversationMessages;
 };
 
-export const getUserConversations = async ({ page = 1, limit = 10 }, user) => {
+export const getUserConversations = async (
+  { page = 1, limit = 10, search = "" },
+  user,
+) => {
   let conversations = await aggregate({
     model: ConversationModel,
     pipeline: [
@@ -100,6 +103,51 @@ export const getUserConversations = async ({ page = 1, limit = 10 }, user) => {
           as: "receiver",
         },
       },
+      {
+        $lookup: {
+          from: "messages",
+          localField: "messageId",
+          foreignField: "_id",
+          as: "message",
+        },
+      },
+      {
+        $unwind: "$sender",
+      },
+      {
+        $unwind: "$receiver",
+      },
+      {
+        $unwind: "$message",
+      },
+      {
+        $addFields: {
+          "sender.fullName": {
+            $concat: [
+              { $ifNull: ["$sender.firstName", ""] },
+              " ",
+              { $ifNull: ["$sender.lastName", ""] },
+            ],
+          },
+          "receiver.fullName": {
+            $concat: [
+              { $ifNull: ["$receiver.firstName", ""] },
+              " ",
+              { $ifNull: ["$receiver.lastName", ""] },
+            ],
+          },
+        },
+      },
+      {
+        $match: {
+          $or: [
+            { "sender.fullName": { $regex: search, $options: "i" } },
+            { "receiver.fullName": { $regex: search, $options: "i" } },
+            { "sender.email": { $regex: search, $options: "i" } },
+            { "receiver.email": { $regex: search, $options: "i" } },
+          ],
+        },
+      },
     ],
     page,
     limit,
@@ -120,21 +168,27 @@ export const getUserConversations = async ({ page = 1, limit = 10 }, user) => {
   const handled = await Promise.all(
     conversations.data.map(async (conversation) => {
       const [senderPhone, receiverPhone] = await Promise.all([
-        conversation.sender[0].phone &&
-          decryption(conversation.sender[0].phone),
-        conversation.receiver[0].phone &&
-          decryption(conversation.receiver[0].phone),
+        conversation.sender.phone
+          ? decryption(conversation.sender.phone)
+          : undefined,
+        conversation.receiver.phone
+          ? decryption(conversation.receiver.phone)
+          : undefined,
       ]);
       return {
         ...conversation,
-        sender: {
-          ...conversation.sender[0],
-          phone: senderPhone,
-        },
-        receiver: {
-          ...conversation.receiver[0],
-          phone: receiverPhone,
-        },
+        sender: conversation.sender
+          ? {
+              ...conversation.sender,
+              phone: senderPhone,
+            }
+          : null,
+        receiver: conversation.receiver
+          ? {
+              ...conversation.receiver,
+              phone: receiverPhone,
+            }
+          : null,
       };
     }),
   );

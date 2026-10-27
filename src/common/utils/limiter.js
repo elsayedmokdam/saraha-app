@@ -25,8 +25,18 @@ export const generateRateLimiter = ({
     ...options,
 
     limit: async function (req) {
-      const { country } = (await detectLocation(req.ip)) || {};
-      return country === "EG" ? limit : 0;
+      const ip = req.ip;
+      const location = await detectLocation(ip);
+
+      // Allow During Development.
+      if (
+        process.env.NODE_ENV !== "production" &&
+        (ip === "::1" || ip === "127.0.0.1" || ip === "::ffff:127.0.0.1")
+      ) {
+        return limit;
+      }
+
+      return location?.country === "EG" ? limit : 500;
     },
 
     keyGenerator: function (req) {
