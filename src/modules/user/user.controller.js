@@ -48,23 +48,19 @@ router.patch(
   uploadMiddleware({
     multerMiddleware: localFileUpload({
       maxFileSize: 10,
-    }).single("attachment"),
-    // .fields([
-    //   { name: "image", maxCount: 1 },
-    //   { name: "cover", maxCount: 1 },
-    // ]),
-    // .array("attachments", 3),
+    })
+      .single("attachment"),
+      // .fields([
+      //   { name: "image", maxCount: 1 },
+      //   { name: "cover", maxCount: 1 },
+      // ]),
+      // .array("attachments", 3),
     validation: fileValidations.image,
     customPath: "profile",
   }),
   async (req, res) => {
-    // ------------ Array ------------ //
-    // const files = req.files.map((file) => file.value.path);
-    // console.log({ files  });
-    // return successResponse({ res, data: files });
-    // ------------ Fields ------------ //
-    // const files = Object.entries(req.files).map(([key, file]) => file[0].path);
-    // console.log({ files });
+    // ------------ Array & Fields ------------ //
+    // return successResponse({ res, data: req.files });
     // ------------ Single ------------ //
     const data = await uploadProfileImage({ user: req.user, file: req.file });
     return successResponse({ res, data });
@@ -141,7 +137,6 @@ router.put(
   authorization(RoleEnum.ADMIN),
   validation(updateUserSchema),
   async (req, res) => {
-
     const data = await updateUser(req.validated.body, req.validated.params);
     return successResponse({ res, data, message: "User Updated Successfully" });
   },
