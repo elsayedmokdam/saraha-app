@@ -59,7 +59,7 @@ export const processFiles = async ({
   const assets = await Promise.all(
     files.map((file) => processFile({ customPath, file, validation })),
   );
-  return assets.map((file) => file.path);
+  return assets;
 };
 
 // Handle Fields

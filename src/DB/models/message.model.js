@@ -12,7 +12,7 @@ const MessageSchema = new mongoose.Schema(
       maxLength: [50000, "Content must be at most 50000 characters."],
     },
 
-    attachment: [String],
+    attachments: [String],
 
     senderId: {
       type: mongoose.Schema.Types.ObjectId,

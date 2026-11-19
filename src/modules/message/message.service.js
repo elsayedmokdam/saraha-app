@@ -36,14 +36,14 @@ export const createMessage = async (
   if (!checkReceiverExist) {
     throw NotFoundException({ message: "Invalid Receiver Id" });
   }
-
+  
   const message = await create({
     model: MessageModel,
     data: [
       {
         content,
         receiverId,
-        attachment: files.map((file) => file.path),
+        attachments: files.map((file) => file.path),
         senderId: user?._id,
       },
     ],
