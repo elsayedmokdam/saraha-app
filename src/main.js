@@ -37,7 +37,11 @@ app.set("trust proxy", true);
 // Application Level Middleware
 app.use(
   morgan("combined"),
-  helmet(),
+  helmet({
+    crossOriginResourcePolicy: {
+      policy: "cross-origin",
+    },
+  }),
   cors(),
   generateRateLimiter({ limit: 1000 }),
   express.json(),
